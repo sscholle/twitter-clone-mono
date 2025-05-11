@@ -7,6 +7,9 @@ if (process.env.NODE_ENV === "development") {
   dotenv.config();
 }
 
+// console.log("NODE_ENV", process.env.NODE_ENV);
+// console.log("ZERO_AUTH_SECRET", process.env.ZERO_AUTH_SECRET);
+
 export default defineConfig({
   build: {
     target: "es2022",

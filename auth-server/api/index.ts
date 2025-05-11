@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { setCookie } from "hono/cookie";
+import { cors } from 'hono/cors';
 import { handle } from "hono/vercel";
 import { SignJWT } from "jose";
 
@@ -7,7 +8,10 @@ export const config = {
   runtime: "edge",
 };
 
-export const app = new Hono().basePath("/api");
+export const app = new Hono().basePath("/api").use(cors({
+  origin: "http://localhost:4200",
+  credentials: true,
+}));
 
 // See seed.sql
 // In real life you would of course authenticate the user however you like.
@@ -39,14 +43,13 @@ app.get("/login", async (c) => {
     .sign(new TextEncoder().encode(must(process.env.ZERO_AUTH_SECRET)));
 
   setCookie(c, "jwt", jwt, {
+    httpOnly: false,// allow JS access to the cookie
     sameSite: "None",
     secure: true,
     expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
   });
 
-  return c.text("ok", 200, {
-    // "Set-Cookie": `jwt=${jwt}; SameSite=None; Secure; HttpOnly; Path=/; Max-Age=2592000`,
-  });
+  return c.text("ok", 200);
 });
 
 export default handle(app);

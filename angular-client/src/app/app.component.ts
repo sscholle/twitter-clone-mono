@@ -7,6 +7,8 @@ import { SidebarComponent } from "./components/sidebar/sidebar.component";
 import { ThemeService } from './services/theme.service';
 import { CommonModule } from '@angular/common';
 import { MessagesComponent } from "./messages/messages.component";
+import { ZeroService } from 'zero-angular';
+import Cookies from "js-cookie";
 
 @Component({
   selector: 'app-root',
@@ -17,7 +19,7 @@ import { MessagesComponent } from "./messages/messages.component";
 export class AppComponent implements OnInit {
   title = 'ng-xstate-entity-view-state';
 
-  constructor(private themeService: ThemeService, private renderer: Renderer2) {
+  constructor(private zeroService: ZeroService<Schema>) {
     // Init Repos
     repo.medium = new ZeroRepository<Schema, Medium>(
       'medium',
@@ -46,6 +48,7 @@ export class AppComponent implements OnInit {
     // allRepositories.message.initRepo(this.zeroService);
     // allRepositories.user.initRepo(this.zeroService);
   }
+  user: User | undefined;
   ngOnInit(): void {
     // this.themeService.themeChanges().subscribe(theme => {
     //   if (theme.oldValue) {
@@ -58,6 +61,11 @@ export class AppComponent implements OnInit {
     //   console.log('Messages:', messages);
     //   this.tweets = messages as Message[];
     // });
+    repo.user?.findOne(this.userID)
+    .then((user) => {
+      console.log('User:', user);
+      this.user = user as User;
+    });
     repo.user?.find()
     .then((users) => {
       console.log('Users:', users);
@@ -80,5 +88,27 @@ export class AppComponent implements OnInit {
     //   console.log('Filtered Messages:', messages);
     //   this.tweets = messages as Message[];
     // });
+  }
+
+  async login(evt: Event) {
+    evt.preventDefault();
+    // just loging with randon user for now
+
+    if (!this.isLoggedIn) {
+      const res = await fetch('http://localhost:5173/api/login', {
+        credentials: 'include',
+      });
+    } else {
+      Cookies.remove("jwt");
+    }
+    location.reload();
+  }
+
+  get isLoggedIn() {
+    return this.zeroService.getZero().userID !== "anon";
+  }
+
+  get userID() {
+    return this.zeroService.getZero().userID;
   }
 }
