@@ -1,0 +1,151 @@
+import { Query, Row, Schema, SimpleOperator, TableMutator, TableSchema, Zero } from "@rocicorp/zero";
+import { BaseRepository } from "./BaseRepository";
+import { QueryService, ZeroService } from "zero-angular";
+import { filter, map, Observable } from "rxjs";
+import { inject } from "@angular/core";
+import { RelationParam } from "./interfaces/IRead";
+
+
+
+export class ZeroRepository<S extends Schema, T extends Row<TableSchema>> extends BaseRepository<T, S> {
+  private zeroService = inject(ZeroService<S>);
+  private query = inject(QueryService);
+  private z = this.zeroService.getZero() as Zero<S>;
+
+  constructor(
+    private collectionName: string,
+    private idField: string,
+  ) {
+    super();
+    this.baseQuery = this.z.query[this.collectionName];
+    this.baseMutate = this.z.mutate[this.collectionName];
+  }
+
+  baseQuery: Query<S, string>;
+  baseMutate: TableMutator<S["tables"][string]>;
+  override create(item: T): Promise<boolean> {
+    return new Promise((resolve) => {
+      try {
+        this.baseMutate.insert({ ...item, [this.idField]: item[this.idField] } as any);
+        resolve(true);
+      }
+      catch (error) {
+        console.error("Error creating item:", error);
+        resolve(false);
+      }
+    });
+  }
+
+  override update(id: string, item: T): Promise<boolean> {
+    return new Promise((resolve) => {
+      try {
+        this.baseMutate.update({ ...item, [this.idField]: id } as any);
+        resolve(true);
+      }
+      catch (error) {
+        console.error("Error updating item:", error);
+        resolve(false);
+      }
+    });
+  }
+
+  override delete(id: string): Promise<boolean> {
+    return new Promise((resolve) => {
+      try {
+        this.baseMutate.delete({ [this.idField]: id } as any);
+        resolve(true);
+      }
+      catch (error) {
+        console.error("Error deleting item:", error);
+        resolve(false);
+      }
+    });
+  }
+
+  override find(queryParams: Record<string, string | string[]> = {}, relations?: RelationParam<S>[], orderBy?: Record<string, string>, limit?: number, start?: Partial<T>): Promise<T[]> {
+    return new Promise((resolve) => {
+      try {
+        const find = this.generateQueryObject(queryParams, relations, orderBy, limit, start);
+        this.query.useQuery(find)
+          .pipe(
+            filter(([result, resultType]) => {
+              return resultType.type === "complete";
+            })
+          ).subscribe(([result, resultType]) => {
+            const data = result as T[];
+            resolve(data);
+          });
+      }
+      catch (error) {
+        console.error("Error finding item:", error);
+        resolve([]);
+      }
+    });
+  }
+
+  findSubscribe(queryParams: Record<string, string | string[]> = {}, relations?: RelationParam<S>[], orderBy?: Record<string, string>, limit?: number, start?: Partial<T>): Observable<T[]> {
+    const find = this.generateQueryObject(queryParams, relations, orderBy, limit, start);
+    return this.query.useQuery(find)
+      .pipe(
+        filter(([result, resultType]) => {
+          return resultType.type === "complete";
+        }),
+        map(([result, type]) => {
+          return result as T[];
+        })
+      );
+  }
+
+  generateQueryObject(queryParams: Record<string, string | string[]>, relations?: RelationParam<S>[], orderBy?: Record<string, string>, limit?: number, start?: Partial<T>): Query<S, string> {
+    let find = this.baseQuery;
+    relations?.forEach((relation) => {
+      find = find.related(relation.table as any, (query) => relation.cb(query as Query<S, string>));
+    });
+    console.log("find", this.collectionName, queryParams, relations, orderBy, limit, start);
+    Object.keys(queryParams).forEach((key) => {
+      const value = queryParams[key] as [SimpleOperator, any];
+      if (value) {
+        if (typeof value === "string")
+          find = find.where(key as any, value as any);
+        else if (Array.isArray(value))
+          find = find.where(key as any, ...value);
+      }
+    });
+    if (orderBy)
+      Object.keys(orderBy).forEach((key) => {
+        const value = orderBy[key];
+        if (value) {
+          find = find.orderBy(key as any, value as any);
+        }
+      });
+    if (limit && limit > 0)
+      find = find.limit(limit);
+    if(start)
+      find = find.start(start)
+    return find;
+  }
+
+  override findOne(id: string): Promise<T> {
+    return new Promise((resolve) => {
+      try {
+        this.query.useQuery(
+          this.baseQuery.where(this.idField as any, id as any).one()
+        )
+          .pipe(
+            filter(([result, resultType]) => {
+              console.log("resultType", resultType);
+              return resultType.type === "complete";
+            })
+          ).subscribe(([result, resultType]) => {
+            console.log("result", result);
+            const data = result as unknown as T;
+            resolve(data);
+          });
+      }
+      catch (error) {
+        console.error("Error finding item:", error);
+        resolve({} as T);
+      }
+    });
+  }
+}

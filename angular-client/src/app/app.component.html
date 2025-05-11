@@ -1,0 +1,71 @@
+<!-- <main class="d-flex flex-nowrap">
+	<app-sidebar class="d-flex flex-column flex-shrink-0 bg-body-tertiary"></app-sidebar>
+	<div class="content">
+		<div class="container my-1">
+			<router-outlet></router-outlet>
+		</div>
+	</div>
+</main> -->
+<div class="container py-4">
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary rounded shadow">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="#">TwitterClone</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item">
+            <a class="nav-link active" href="#">Home</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">Explore</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">Notifications</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Feed Section -->
+  <div class="row mt-4">
+    <!-- Sidebar -->
+    <div class="col-md-3">
+      <div class="card bg-glass text-white shadow">
+        <div class="card-body">
+          <h5 class="card-title">Trending Topics</h5>
+          <ul class="list-group list-group-flush" *ngIf="topics.length > 0">
+            <li class="list-group-item bg-transparent text-white" *ngFor="let topic of topics">
+							<a href="#" (click)="filterByTopic(topic.id)">#{{ topic.name }}</a>
+						</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Feed -->
+    <div class="col-md-6">
+			<!-- New Message & -->
+      <!-- Messages -->
+			 <components-messages></components-messages>
+    </div>
+
+    <!-- Right Sidebar -->
+    <div class="col-md-3">
+      <div class="card bg-glass text-white shadow">
+        <div class="card-body">
+          <h5 class="card-title">Who to Follow</h5>
+          <ul class="list-group list-group-flush">
+            <li *ngFor="let user of users" class="list-group-item bg-transparent text-white d-flex justify-content-between align-items-center">
+              <span>{{ user.name }}</span>
+              <button class="btn btn-sm btn-outline-light">Follow</button>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

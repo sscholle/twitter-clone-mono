@@ -1,0 +1,62 @@
+<div class="modal-header border-bottom-0">
+  <h1 class="modal-title fs-5">
+		@if (snapshot.hasTag('drafting')) {
+			Add Message
+		} @else if (snapshot.hasTag('editing')) {
+			Edit Message
+		} @else if (snapshot.hasTag('viewing')) {
+			View Message
+		} @else if (snapshot.hasTag('deleting')) {
+			Delete Message
+		}
+	</h1>
+  <button type="button" class="btn-close" aria-label="Close" (click)="activeModal.dismiss('Cross click')"></button>
+</div>
+<div class="modal-body py-0">
+  <div>
+    <label for="message" class="form-label">Message</label>
+    <textarea id="message" class="form-control" [(ngModel)]="message" name="message" rows="3"></textarea>
+
+    <label for="medium" class="form-label mt-3">Medium</label>
+    <select id="medium" class="form-select" [(ngModel)]="selectedMedium" name="medium">
+      <option *ngFor="let medium of mediums" [value]="medium.id">{{medium.name }}</option>
+    </select>
+  </div>
+</div>
+<div class="modal-footer flex-column align-items-stretch w-100 gap-2 pb-3 border-top-0">
+  <button
+		*ngIf="snapshot.can({ type: 'CreateEntity'})"
+		type="button" class="btn btn-lg btn-primary"
+    (click)="send({ type: 'CreateEntity'})">Save</button>
+  <button
+		*ngIf="snapshot.can({ type: 'UpdateEntity'})"
+		type="button" class="btn btn-lg btn-primary"
+    (click)="send({ type: 'UpdateEntity'})">Update</button>
+  <button
+		*ngIf="snapshot.can({ type: 'DeleteEntity'})"
+		type="button" class="btn btn-lg btn-warning"
+    (click)="send({ type: 'DeleteEntity'})">Delete</button>
+  <button
+		type="button" class="btn btn-lg btn-secondary"
+		(click)="activeModal.dismiss('Close')">Close</button>
+
+	<div class="alert alert-info" *ngIf="snapshot && snapshot.hasTag('loading')"> Loading... </div>
+
+  <section id="app" *ngIf="false">
+    <!-- <em>
+      {{stateValueString}}
+    </em> -->
+
+    <!-- <output>{{snapshot.context.type}}</output> -->
+    <!-- <button *ngFor="let eventType of nextEvents" type="button" class="btn btn-secondary"
+      (click)="send({ type: eventType })" [disabled]="!snapshot.can({ type: eventType })">
+      {{eventType}}
+    </button> -->
+
+    <!--
+    <h2>Context</h2>
+    <pre>{{JSON.stringify(snapshot.context, null, 2)}}</pre>
+    <h2>State</h2>
+    <pre>{{JSON.stringify(snapshot, null, 2)}}</pre> -->
+  </section>
+</div>

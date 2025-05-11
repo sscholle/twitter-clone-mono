@@ -1,0 +1,122 @@
+<div class="card bg-glass text-white shadow mb-3">
+	<div class="card-body">
+		<textarea class="form-control bg-transparent text-white border-0" rows="3" placeholder="What's happening?" [(ngModel)]="newMessage"></textarea>
+		<div class="d-flex justify-content-end mt-2">
+			<button class="btn btn-primary" (click)="createMessage()">Tweet</button>
+		</div>
+	</div>
+</div>
+
+<div *ngFor="let tweet of displaymessages" class="card bg-glass text-white shadow mb-3">
+	<div class="card-body pb-0">
+		<div class="d-flex align-items-center mb-2">
+			<img src="https://avatars.githubusercontent.com/u/2486065?v=4" alt="" width="40" height="40"
+			class="rounded-circle me-2">
+			<div>
+				<h6 class="mb-0">{{ tweet.sender.name }}</h6>
+				<small class="text-muted">{{ tweet.timestamp | date }}</small>
+			</div>
+		</div>
+		<p class="mb-0">{{ tweet.body }}</p>
+		<!-- <p class="mb-0">{{ tweet.topicMessage?.[0]?.topic?.name }}</p> -->
+	</div>
+	<div class="card-footer border-top-0 bg-transparent p-0 d-flex justify-content-end">
+		<div class="d-flex justify-content-between">
+			<div class="btn-group">
+				<button class="btn btn-text text-secondary btn-sm" (click)="editMessage(tweet.id);$event.preventDefault();"><i class="bi bi-pencil-fill"></i> Edit</button>
+				<button class="btn btn-text text-success btn-sm"><i class="bi bi-hand-thumbs-up"></i> Like</button>
+				<button class="btn btn-text text-info btn-sm"><i class="bi bi-recycle"></i> Retweet</button>
+				<button class="btn btn-text text-tertiary btn-sm"><i class="bi bi-reply"></i> Reply</button>
+		</div>
+			<!-- <small class="text-muted">Medium: {{ tweet.medium.name }}</small>
+			<button class="btn btn-outline-danger btn-sm" (click)="editMessage(tweet.id);$event.preventDefault();">Edit</button> -->
+		</div>
+
+	</div>
+</div>
+
+<!-- <button (click)="toggleLogin()" class="btn btn-primary">
+	{{userID === "anon" ? "Login" : "Logout"}}
+</button>
+<button (click)="inspect()" class="btn btn-primary-outline">Inspect</button> -->
+<!--
+
+<div class="card bg-body-tertiary shadow">
+	<div class="card-header">
+		<div class="d-flex flex-nowrap">
+			<h2>Messages</h2>
+			<div class="d-flex flex-grow-1 justify-content-end">
+				<div class="btn-toolbar mb-2 mb-md-0">
+					<button class="btn btn-primary" (click)="openMyEntityView()">
+						<i class="bi bi-send-fill"></i>
+						Post
+					</button>
+				</div>
+
+			</div>
+		</div>
+	</div>
+	<div class="card-body">
+		<p class="card-text">{{userID === "anon" ? "" : `Logged in as ${user?.name}`}}</p>
+
+
+
+		<div class="controls mb-2">
+			<div class="form-group">
+				<label for="sender">From:</label>
+				<select class="form-select" id="sender" [(ngModel)]="filterUser" (ngModelChange)="setFilterUser($event)">
+					<option value="">
+						Sender
+					</option>
+					<option *ngFor="let user of users" [value]="user.id">
+						{{user.name}}
+					</option>
+				</select>
+			</div>
+			<div class="form-group">
+				<label for="message">Contains:</label>
+				<input type="text" id="message" class="form-control" placeholder="message" [(ngModel)]="filterText"
+					(ngModelChange)="setFilterText($event)" />
+			</div>
+		</div>
+
+		<section class="mb-2">
+			<div class="list-group">
+				<ng-container *ngFor="let item of displaymessages">
+					<div class="list-group-item d-flex gap-3 py-3" aria-current="true">
+						<img src="https://avatars.githubusercontent.com/u/2486065?v=4" alt="" width="32" height="32"
+							class="rounded-circle flex-shrink-0">
+						<div class="d-flex gap-2 w-100 justify-content-between">
+							<div>
+								<h6 class="mb-0"><a title="Filter by this User"
+										(click)="setFilterUser(item.sender.id);$event.preventDefault();" href="#">{{ item.sender.name }}</a>
+								</h6>
+								<p class="mb-0">{{ item.body }}</p>
+							</div>
+							<small class="text-nowrap">{{ item.medium.name }} - {{ item.timestamp | date }} - <a
+									(click)="editMessage(item.id);$event.preventDefault();" href="#">Edit</a></small>
+						</div>
+					</div>
+				</ng-container>
+			</div>
+		</section>
+
+		<div class="btn-toolbar">
+			<ngb-pagination (pageChange)="triggerPagination($event)" [(page)]="page" [pageSize]="pageSize"
+			[collectionSize]="allMessages?.length || 0" [maxSize]="6" />
+			<div class="d-flex flex-grow-1 justify-content-end align-items-center">
+
+				<em>
+					<ng-container *ngIf="!hasFilters; else allMessage">
+						Showing all {{ displaymessages.length }} messages
+					</ng-container>
+					<ng-template #allMessage>
+						Showing {{ displaymessages.length }} of {{ allMessages?.length }} messages. Try opening <a href="/"
+						target="_blank">another tab</a> to see them all!
+					</ng-template>
+				</em>
+			</div>
+		</div>
+
+	</div>
+</div> -->
