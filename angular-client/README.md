@@ -37,6 +37,7 @@ Refer to Hello-Zero project
 - Filter Messages by Topic
 - Filter Topics by Trending
 - Filter Users by Popular Content
+- Schema to be located in logically shared (cache + ng-client)
 
 ### TODO
 - Implement EntityView State onto a 'View/Form Component' with API examples

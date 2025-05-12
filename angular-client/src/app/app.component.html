@@ -8,7 +8,7 @@
 </main> -->
 <div class="container py-4">
   <!-- Navbar -->
-  <nav class="navbar navbar-expand-lg navbar-dark bg-primary rounded shadow">
+  <nav class="navbar navbar-expand-lg navbar-dark bg-glass rounded shadow">
     <div class="container-fluid">
       <a class="navbar-brand" href="#">TwitterClone</a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,15 +31,15 @@
   </nav>
 
   <!-- Feed Section -->
-  <div class="row mt-4">
+  <div class="row mt-3">
     <!-- Sidebar -->
-    <div class="col-md-3">
+    <div id="topics" class="sidebar col-md-3 mb-3">
       <div class="card bg-glass text-white shadow">
         <div class="card-body">
           <h5 class="card-title">Trending Topics</h5>
           <ul class="list-group list-group-flush" *ngIf="topics.length > 0">
             <li class="list-group-item bg-transparent text-white" *ngFor="let topic of topics">
-							<a href="#" (click)="filterByTopic(topic.id)">#{{ topic.name }}</a>
+							<a href="#" class="text-light" (click)="filterByTopic(topic.id)">#{{ topic.name }}</a>
 						</li>
           </ul>
         </div>
@@ -47,14 +47,14 @@
     </div>
 
     <!-- Main Feed -->
-    <div class="col-md-6">
+    <div id="feed" class="col-md-6">
 			<!-- New Message & -->
       <!-- Messages -->
 			 <components-messages></components-messages>
     </div>
 
     <!-- Right Sidebar -->
-    <div class="col-md-3">
+    <div id="followees" class="didebar col-md-3">
       <div class="card bg-glass text-white shadow">
         <div class="card-body">
           <h5 class="card-title">Who to Follow</h5>

@@ -1,8 +1,9 @@
 /* You can add global styles to this file, and also import other style files */
 
 // $primary: #ffd900;
-$primary: #005780;
-$secondary: #6c757d;
+$primary: #fff;
+$secondary: #000;
+$tertiary: #c0c0c0;
 $success: #28a745;
 $info: #17a2b8;
 $warning: #ffc107;
@@ -52,4 +53,29 @@ ngb-pagination {
   ul.pagination {
     margin: 0;
   }
+}
+
+
+// .bg-glass {
+//   background: rgba(255, 255, 255, 0.1);
+//   backdrop-filter: blur(10px);
+//   border: 1px solid rgba(255, 255, 255, 0.2);
+// }
+
+body {
+  background-image: url('https://images.unsplash.com/photo-1519681393784-d120267933ba?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=1124&q=100');
+  background-position: center;
+  background-attachment: scroll;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+}
+
+/* Glassmorphism card effect */
+.card, .bg-glass {
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    background-color: rgba(17, 25, 40, 0.75);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.125);
 }
