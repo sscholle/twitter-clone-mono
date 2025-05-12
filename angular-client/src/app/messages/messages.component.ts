@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { Medium, Message, schema, Schema, Topic, TopicMessage, User } from '../util/schema';
 import { MyEntityViewComponent } from '../my-entity-view/my-entity-view.component';
 import { CommonModule } from '@angular/common';
@@ -29,6 +29,7 @@ export class MessagesComponent implements OnInit {
   zeroService = inject(ZeroService<Schema>);
   // zeroQuery = inject(QueryService);
 	modalService = inject(NgbModal);
+  changeDetectorRef = inject(ChangeDetectorRef);
 
   users: User[] | null = null;
   mediums: Medium[] | null = null;
@@ -93,6 +94,8 @@ export class MessagesComponent implements OnInit {
     .subscribe((messages) => {
       console.log('Messages:', messages);
       this.displaymessages = messages as DisplayMessage[];
+      // @TODO: Notify Angular that the data has changed
+      this.changeDetectorRef.detectChanges();
     })
   }
 
@@ -194,7 +197,7 @@ export class MessagesComponent implements OnInit {
 
   // PAGING
   collectionSize = 0;// - Number of elements/items in the collection. i.e. the total number of items the pagination should handle.
-  pageSize = 20;// - Number of elements/items per page.
+  pageSize = 10;// - Number of elements/items per page.
   page = 1;//- The current page.
   startRecord: DisplayMessage | null = null;// - The first record of the current page.
 

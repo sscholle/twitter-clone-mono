@@ -35,88 +35,16 @@
 	</div>
 </div>
 
-<!-- <button (click)="toggleLogin()" class="btn btn-primary">
-	{{userID === "anon" ? "Login" : "Logout"}}
-</button>
-<button (click)="inspect()" class="btn btn-primary-outline">Inspect</button> -->
-<!--
-
-<div class="card bg-body-tertiary shadow">
-	<div class="card-header">
-		<div class="d-flex flex-nowrap">
-			<h2>Messages</h2>
-			<div class="d-flex flex-grow-1 justify-content-end">
-				<div class="btn-toolbar mb-2 mb-md-0">
-					<button class="btn btn-primary" (click)="openMyEntityView()">
-						<i class="bi bi-send-fill"></i>
-						Post
-					</button>
-				</div>
-
-			</div>
-		</div>
-	</div>
-	<div class="card-body">
-		<p class="card-text">{{userID === "anon" ? "" : `Logged in as ${user?.name}`}}</p>
-
-
-
-		<div class="controls mb-2">
-			<div class="form-group">
-				<label for="sender">From:</label>
-				<select class="form-select" id="sender" [(ngModel)]="filterUser" (ngModelChange)="setFilterUser($event)">
-					<option value="">
-						Sender
-					</option>
-					<option *ngFor="let user of users" [value]="user.id">
-						{{user.name}}
-					</option>
-				</select>
-			</div>
-			<div class="form-group">
-				<label for="message">Contains:</label>
-				<input type="text" id="message" class="form-control" placeholder="message" [(ngModel)]="filterText"
-					(ngModelChange)="setFilterText($event)" />
-			</div>
-		</div>
-
-		<section class="mb-2">
-			<div class="list-group">
-				<ng-container *ngFor="let item of displaymessages">
-					<div class="list-group-item d-flex gap-3 py-3" aria-current="true">
-						<img src="https://avatars.githubusercontent.com/u/2486065?v=4" alt="" width="32" height="32"
-							class="rounded-circle flex-shrink-0">
-						<div class="d-flex gap-2 w-100 justify-content-between">
-							<div>
-								<h6 class="mb-0"><a title="Filter by this User"
-										(click)="setFilterUser(item.sender.id);$event.preventDefault();" href="#">{{ item.sender.name }}</a>
-								</h6>
-								<p class="mb-0">{{ item.body }}</p>
-							</div>
-							<small class="text-nowrap">{{ item.medium.name }} - {{ item.timestamp | date }} - <a
-									(click)="editMessage(item.id);$event.preventDefault();" href="#">Edit</a></small>
-						</div>
-					</div>
-				</ng-container>
-			</div>
-		</section>
-
-		<div class="btn-toolbar">
-			<ngb-pagination (pageChange)="triggerPagination($event)" [(page)]="page" [pageSize]="pageSize"
-			[collectionSize]="allMessages?.length || 0" [maxSize]="6" />
-			<div class="d-flex flex-grow-1 justify-content-end align-items-center">
-
-				<em>
-					<ng-container *ngIf="!hasFilters; else allMessage">
-						Showing all {{ displaymessages.length }} messages
-					</ng-container>
-					<ng-template #allMessage>
-						Showing {{ displaymessages.length }} of {{ allMessages?.length }} messages. Try opening <a href="/"
-						target="_blank">another tab</a> to see them all!
-					</ng-template>
-				</em>
-			</div>
-		</div>
-
+<!-- <div class="btn-toolbar">
+	<ngb-pagination
+		(pageChange)="triggerPagination($event)"
+		[(page)]="page"
+		[pageSize]="pageSize"
+		[collectionSize]="allMessages?.length || 0"
+		[maxSize]="6" />
+	<div class="d-flex flex-grow-1 justify-content-end align-items-center">
+		<em>
+				Showing {{ displaymessages.length }} of {{ allMessages?.length }} messages.
+		</em>
 	</div>
 </div> -->
