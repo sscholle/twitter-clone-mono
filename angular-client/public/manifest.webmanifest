@@ -1,6 +1,6 @@
 {
-  "name": "ng-xstate-entity-view-state",
-  "short_name": "ng-xstate-entity-view-state",
+  "name": "Twitter Clone",
+  "short_name": "twitter-clone",
   "theme_color": "#1976d2",
   "background_color": "#fafafa",
   "display": "standalone",
