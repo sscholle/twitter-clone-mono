@@ -158,7 +158,7 @@ export const permissions = definePermissions<AuthData, Schema>(schema, () => {
   const allowIfYourFollower = (
     authData: AuthData,
     { cmp }: ExpressionBuilder<Schema, "follower">
-  ) => cmp("userID", "=", authData.sub ?? "");
+  ) => cmp("followerID", "=", authData.sub ?? "");
 
   return {
     medium: {
@@ -202,7 +202,7 @@ export const permissions = definePermissions<AuthData, Schema>(schema, () => {
     follower: {
       row: {
         select: ANYONE_CAN,
-        insert: [allowIfLoggedIn, allowIfYourFollower],
+        insert: [allowIfLoggedIn],
         delete: [allowIfLoggedIn, allowIfYourFollower],
       },
     },
