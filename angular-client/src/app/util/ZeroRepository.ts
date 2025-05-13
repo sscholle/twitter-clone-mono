@@ -14,11 +14,19 @@ export class ZeroRepository<S extends Schema, T extends Row<TableSchema>> extend
 
   constructor(
     private collectionName: string,
-    private idField: string,
+    private idField: string[] = ["id"],
   ) {
     super();
     this.baseQuery = this.z.query[this.collectionName];
     this.baseMutate = this.z.mutate[this.collectionName];
+  }
+
+  mapItemToIdField(item: T): Record<string, string> {
+    const idField = this.idField.reduce((acc, field) => {
+      acc[field] = item[field];
+      return acc;
+    }, {} as Record<string, string>);
+    return idField;
   }
 
   baseQuery: Query<S, string>;
@@ -26,7 +34,7 @@ export class ZeroRepository<S extends Schema, T extends Row<TableSchema>> extend
   override create(item: T): Promise<boolean> {
     return new Promise((resolve) => {
       try {
-        this.baseMutate.insert({ ...item, [this.idField]: item[this.idField] } as any);
+        this.baseMutate.insert({ ...item, ...this.mapItemToIdField(item) } as any);
         resolve(true);
       }
       catch (error) {
@@ -36,10 +44,10 @@ export class ZeroRepository<S extends Schema, T extends Row<TableSchema>> extend
     });
   }
 
-  override update(id: string, item: T): Promise<boolean> {
+  override update(id: string, item: Partial<T>): Promise<boolean> {
     return new Promise((resolve) => {
       try {
-        this.baseMutate.update({ ...item, [this.idField]: id } as any);
+        this.baseMutate.update({ ...item, ...this.mapItemToIdField(item as T) } as any);
         resolve(true);
       }
       catch (error) {
@@ -49,18 +57,127 @@ export class ZeroRepository<S extends Schema, T extends Row<TableSchema>> extend
     });
   }
 
-  override delete(id: string): Promise<boolean> {
+  override upsert(item: Partial<T>): Promise<boolean> {
     return new Promise((resolve) => {
       try {
-        this.baseMutate.delete({ [this.idField]: id } as any);
+        console.log("upsert", item);
+        this.baseMutate.upsert({ ...item, ...this.mapItemToIdField(item as T) } as any);
         resolve(true);
       }
       catch (error) {
-        console.error("Error deleting item:", error);
+        console.error("Error upserting item:", error);
         resolve(false);
       }
     });
   }
+  override batchCreate(items: T[]): Promise<boolean> {
+    return new Promise((resolve) => {
+      try {
+        this.z.mutateBatch(
+          (tx) => {
+            items.forEach((item) => {
+              tx[this.collectionName].insert({ ...item, ...this.mapItemToIdField(item) } as any);
+            });
+          }
+        )
+        resolve(true);
+      }
+      catch (error) {
+        console.error("Error batch creating items:", error);
+        resolve(false);
+      }
+    });
+  }
+  override batchUpdate(items: T[]): Promise<boolean> {
+    return new Promise((resolve) => {
+      try {
+        this.z.mutateBatch(
+          (tx) => {
+            items.forEach((item) => {
+              tx[this.collectionName].update({ ...item, ...this.mapItemToIdField(item as T) } as any);
+            });
+          }
+        )
+        resolve(true);
+      }
+      catch (error) {
+        console.error("Error batch updating items:", error);
+        resolve(false);
+      }
+    });
+  }
+  override batchDelete(items: T[]): Promise<boolean> {
+    return new Promise((resolve) => {
+      try {
+        this.z.mutateBatch(
+          (tx) => {
+            items.forEach((item) => {
+              tx[this.collectionName].delete({ ...item, ...this.mapItemToIdField(item as T) } as any);
+            });
+          }
+        )
+        resolve(true);
+      }
+      catch (error) {
+        console.error("Error batch deleting items:", error);
+        resolve(false);
+      }
+    });
+  }
+  override batchUpsert(items: Partial<T>[]): Promise<boolean> {
+    console.log("batchUpsert", items);
+    return new Promise((resolve) => {
+      try {
+        if(items.length === 0) {
+          resolve(true);
+          return;
+        }
+        this.z.mutateBatch(
+          (tx) => {
+            items.forEach((item) => {
+              tx[this.collectionName].upsert({ ...item, ...this.mapItemToIdField(item as T) } as any);
+            });
+          }
+        )
+        resolve(true);
+      }
+      catch (error) {
+        console.error("Error batch upserting items:", error);
+        resolve(false);
+      }
+    });
+  }
+  // override batchDeleteByID(ids: string[]): Promise<boolean> {
+  //   return new Promise((resolve) => {
+  //     try {
+  //       this.z.mutateBatch(
+  //         (tx) => {
+  //           ids.forEach((id) => {
+  //             tx[this.collectionName].delete({ [this.idField]: id } as any);
+  //           });
+  //         }
+  //       )
+  //       resolve(true);
+  //     }
+  //     catch (error) {
+  //       console.error("Error batch deleting items by ID:", error);
+  //       resolve(false);
+  //     }
+  //   });
+  // }
+
+  // override delete(id: string): Promise<boolean> {
+  //   return new Promise((resolve) => {
+  //     try {
+  //       this.baseMutate.delete({ [this.idField]: id } as any);
+  //       resolve(true);
+  //     }
+  //     catch (error) {
+  //       console.error("Error deleting item:", error);
+  //       resolve(false);
+  //     }
+  //   });
+  // }
 
   override find(queryParams: Record<string, string | string[]> = {}, relations?: RelationParam<S>[], orderBy?: Record<string, string>, limit?: number, start?: Partial<T>): Promise<T[]> {
     return new Promise((resolve) => {

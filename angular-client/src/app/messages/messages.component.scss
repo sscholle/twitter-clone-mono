@@ -29,6 +29,9 @@
     color: white;
     cursor: pointer;
   }
+  .dropdown-toggle::after {
+    display: none;
+  }
 
   .mdl {
     position: fixed;

@@ -1,4 +1,4 @@
-import { Follower, Medium, Message, Schema, Topic, User } from "../util/schema";
+import { Follower, Medium, Message, MessageView, Schema, Topic, User } from "../util/schema";
 import { ZeroRepository } from "../util/ZeroRepository";
 
 type TableKey = "message" | "medium" | "user";
@@ -12,5 +12,6 @@ export const allRepositories = {
   user: null as ZeroRepository<Schema, User> | null,
   topic: null as ZeroRepository<Schema, Topic> | null,
   follower: null as ZeroRepository<Schema, Follower> | null,
+  messageView: null as ZeroRepository<Schema, MessageView> | null,
 };
 

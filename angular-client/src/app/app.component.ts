@@ -2,7 +2,7 @@ import { Component, OnInit, Renderer2 } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { allRepositories as repo } from './shared/allRepos';
 import { ZeroRepository } from './util/ZeroRepository';
-import { Follower, Medium, Message, Schema, Topic, User } from './util/schema';
+import { Follower, Medium, Message, MessageView, Schema, Topic, User } from './util/schema';
 import { SidebarComponent } from "./components/sidebar/sidebar.component";
 import { ThemeService } from './services/theme.service';
 import { CommonModule } from '@angular/common';
@@ -23,23 +23,23 @@ export class AppComponent implements OnInit {
     // Init Repos
     repo.medium = new ZeroRepository<Schema, Medium>(
       'medium',
-      'id',
     );
     repo.message = new ZeroRepository<Schema, Message>(
       'message',
-      'id',
+    );
+    repo.messageView = new ZeroRepository<Schema, MessageView>(
+      'message_view',
+      ['userID', 'messageID'],
     );
     repo.user = new ZeroRepository<Schema, User>(
       'user',
-      'id',
     );
     repo.topic = new ZeroRepository<Schema, Topic>(
       'topic',
-      'id',
     );
     repo.follower = new ZeroRepository<Schema, Follower>(
       'follower',
-      'id',
+      ['userID', 'followerID'],
     );
     // // Init ZeroService
     // this.zeroService.initZero();

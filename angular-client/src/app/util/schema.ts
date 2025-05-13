@@ -17,6 +17,7 @@ import {
   number,
   relationships,
   PermissionsConfig,
+  NOBODY_CAN,
 } from "@rocicorp/zero";
 
 const message = table("message")
@@ -72,6 +73,43 @@ const follower = table("follower")
   })
   .primaryKey("userID", "followerID");
 
+/**
+   * CREATE TABLE "message_view" (
+  "user_id" VARCHAR REFERENCES "user"(id),
+  "message_id" VARCHAR REFERENCES "message"(id),
+  "timestamp" TIMESTAMP not null,
+  "like" BOOLEAN DEFAULT false,
+  "like_timestamp" TIMESTAMP,
+  "bookmark" BOOLEAN DEFAULT false,
+  "bookmark_timestamp" TIMESTAMP,
+  PRIMARY KEY ("user_id", "message_id")
+);
+*/
+const messageView = table("message_view")
+  .columns({
+    userID: string().from("user_id"),
+    messageID: string().from("message_id"),
+    timestamp: number(),
+    like: boolean(),
+    likeTimestamp: number().from("like_timestamp"),
+    bookmark: boolean(),
+    bookmarkTimestamp: number().from("bookmark_timestamp"),
+  })
+  .primaryKey("userID", "messageID");
+
+const messageViewRelationships = relationships(messageView, ({ one }) => ({
+  user: one({
+    sourceField: ["userID"],
+    destField: ["id"],
+    destSchema: user,
+  }),
+  message: one({
+    sourceField: ["messageID"],
+    destField: ["id"],
+    destSchema: message,
+  }),
+}));
+
 const followerRelationships = relationships(follower, ({ one }) => ({
   user: one({
     sourceField: ["userID"],
@@ -101,6 +139,11 @@ const messageRelationships = relationships(message, ({ one, many }) => ({
     destField: ["messageID"],
     destSchema: topicMessage,
   }),
+  messageView: many({
+    sourceField: ["id"],
+    destField: ["messageID"],
+    destSchema: messageView,
+  }),
 }));
 
 // const topicRelationships = relationships(topic, ({ one }) => ({
@@ -125,8 +168,8 @@ const topicMessageRelationships = relationships(topicMessage, ({ one }) => ({
 
 
 export const schema = createSchema({
-  tables: [user, medium, message, follower, topic, topicMessage],
-  relationships: [messageRelationships, followerRelationships, topicMessageRelationships],
+  tables: [user, medium, message, follower, topic, topicMessage, messageView],
+  relationships: [messageRelationships, followerRelationships, topicMessageRelationships, messageViewRelationships],
   // relationships: [messageRelationships, followerRelationships, topicRelationships, topicMessageRelationships],
 });
 
@@ -137,6 +180,11 @@ export type User = Row<typeof schema.tables.user>;
 export type Topic = Row<typeof schema.tables.topic>;
 export type Follower = Row<typeof schema.tables.follower>;
 export type TopicMessage = Row<typeof schema.tables.topic_message>;
+export type MessageView = Row<typeof schema.tables.message_view>;
+export type MessageViewWithUser = Row<typeof schema.tables.message_view> & {
+  user: Row<typeof schema.tables.user>;
+  message: Row<typeof schema.tables.message>;
+};
 
 // The contents of your decoded JWT.
 type AuthData = {
@@ -159,6 +207,11 @@ export const permissions = definePermissions<AuthData, Schema>(schema, () => {
     authData: AuthData,
     { cmp }: ExpressionBuilder<Schema, "follower">
   ) => cmp("followerID", "=", authData.sub ?? "");
+
+  const allowIfViewOwner = (
+    authData: AuthData,
+    { cmp }: ExpressionBuilder<Schema, "message_view">
+  ) => cmp("userID", "=", authData.sub ?? "");
 
   return {
     medium: {
@@ -185,6 +238,19 @@ export const permissions = definePermissions<AuthData, Schema>(schema, () => {
         delete: [allowIfLoggedIn, allowIfMessageSender],
         // everyone can read current messages
         select: ANYONE_CAN,
+      },
+    },
+    message_view: {
+      row: {
+        select: ANYONE_CAN,
+        insert: [allowIfLoggedIn],
+        update: {
+          // user can only edit own messages
+          preMutation: [allowIfLoggedIn, allowIfViewOwner],
+          // user can only edit messages to be owned by self
+          postMutation: [allowIfLoggedIn, allowIfViewOwner],
+        },
+        delete: NOBODY_CAN,
       },
     },
     topic: {

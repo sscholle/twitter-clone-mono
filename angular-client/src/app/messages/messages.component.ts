@@ -1,9 +1,9 @@
 import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
-import { Medium, Message, schema, Schema, Topic, TopicMessage, User } from '../util/schema';
+import { Medium, Message, MessageView, schema, Schema, Topic, TopicMessage, User } from '../util/schema';
 import { MyEntityViewComponent } from '../my-entity-view/my-entity-view.component';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { NgbModal, NgbPaginationModule } from '@ng-bootstrap/ng-bootstrap';
+import { NgbDropdown, NgbDropdownModule, NgbModal, NgbPaginationModule, NgbTooltipModule } from '@ng-bootstrap/ng-bootstrap';
 import { ZeroService } from 'zero-angular';
 import { escapeLike } from '@rocicorp/zero';
 import Cookies from "js-cookie";
@@ -17,11 +17,18 @@ interface TopicMessageWithTopic extends TopicMessage {
 interface DisplayMessage extends Message {
   sender: User,
   medium: Medium
-  topicMessage?: TopicMessageWithTopic[]
+  topicMessage?: TopicMessageWithTopic[],
+  messageView: MessageView[],
+  // generated (Zero does not support aggregation functions yet)
+  topicMessageCount?: number,
+  messageViewCount?: number,
+  messageReplyCount?: number,
+  messageRepostCount?: number,
+  messageLikeCount?: number,
 }
 @Component({
   selector: 'components-messages',
-  imports: [CommonModule, FormsModule, NgbPaginationModule],
+  imports: [CommonModule, FormsModule, NgbPaginationModule, NgbDropdownModule, NgbTooltipModule],
   templateUrl: './messages.component.html',
   styleUrl: './messages.component.scss'
 })
@@ -34,7 +41,7 @@ export class MessagesComponent implements OnInit {
   users: User[] | null = null;
   mediums: Medium[] | null = null;
   allMessages: Message[] | null = null;
-  userID: string | null = this.zeroService.getZero().userID;// TODO: store this in a service
+  userID: string = this.zeroService.getZero().userID;// TODO: store this in a service
   user: User | null = null;
 
   ngOnInit(): void {
@@ -85,6 +92,11 @@ export class MessagesComponent implements OnInit {
         {
           table: "topicMessage",
           cb: (q) => q.related("topic" as never),
+        },
+        {
+          table: "messageView",
+          cb: (q) => q,
+          // cb: (q) => q.related("topicMessage" as never),
         }
       ],
       { "timestamp": "desc" },
@@ -93,9 +105,28 @@ export class MessagesComponent implements OnInit {
     )
     .subscribe((messages) => {
       console.log('Messages:', messages);
-      this.displaymessages = messages as DisplayMessage[];
+      // this.displaymessages = messages as DisplayMessage[];
+      this.displaymessages = messages.map((message) => {
+        const m = message as DisplayMessage;
+        const messageView = m.messageView || [];
+        const topicMessage = m.topicMessage || [];
+        const topicMessageCount = topicMessage.length;
+        const messageViewCount = messageView.length;
+        const messageLikeCount = messageView.filter((view) => view.like).length;
+        const messageReplyCount = 0; // TODO: implement reply count
+        const messageRepostCount = 0; // TODO: implement repost count
+        return {
+          ...m,
+          topicMessageCount,
+          messageViewCount,
+          messageReplyCount,
+          messageRepostCount,
+          messageLikeCount,
+        };
+      });
       // @TODO: Notify Angular that the data has changed
       this.changeDetectorRef.detectChanges();
+      // this.batchMessageView();
     })
   }
 
@@ -234,5 +265,96 @@ export class MessagesComponent implements OnInit {
     .catch((error) => {
       console.error('Error creating message:', error);
     });
+  }
+
+  /**
+   * Posts this message to your timeline.
+   * NOTE: A Repost will either use the Message ID in the new Parent ID field, or the Parent ID (if it was set) of the original message.
+   * @param messageId
+   */
+  repostMessage(messageID: string) {
+    const message = this.allMessages?.find((message) => message.id === messageID);
+    if (!message) {
+      console.error("Message not found", messageID);
+      return;
+    }
+    const currentUserIsOwner = this.userID === message.senderID;
+    // const newParentID = message.parentID || message.id;
+    // console.log("Repost message", newParentID);
+    // repo.message?.create(this.messageShape(this.mediums![0].id, this.userID || "", "Repost: " + newParentID))
+    // .then(() => {
+    //   console.log('Message created');
+    //   this.newMessage = "";
+    // })
+    // .catch((error) => {
+    //   console.error('Error creating message:', error);
+    // });
+  }
+
+  likeMessage(messageID: string) {
+    const message = this.allMessages?.find((message) => message.id === messageID);
+    if (!message) {
+      console.error("Message not found", messageID);
+      return;
+    }
+    repo.messageView?.update(messageID, {
+      userID: this.userID,
+      messageID,
+      like: true,
+      likeTimestamp: new Date().getTime(),
+    })
+    .then(() => {
+      console.log('Message Liked');
+    })
+    .catch((error) => {
+      console.error('Error Liking message:', error);
+    });
+  }
+
+  replyMessage(messageID: string) {
+    const message = this.allMessages?.find((message) => message.id === messageID);
+    if (!message) {
+      console.error("Message not found", messageID);
+      return;
+    }
+    const currentUserIsOwner = this.userID === message.senderID;
+    // const newParentID = message.parentID || message.id;
+    // console.log("Repost message", newParentID);
+    // repo.message?.create(this.messageShape(this.mediums![0].id, this.userID || "", "Repost: " + newParentID))
+    // .then(() => {
+    //   console.log('Message created');
+    //   this.newMessage = "";
+    // })
+    // .catch((error) => {
+    //   console.error('Error creating message:', error);
+    // });
+  }
+
+  /**
+   * Upsert "View" Timestamps for set of messages
+   * @TODO: check filtering - must call this manually for now as this could result in infinite loop
+   */
+  batchMessageView(){
+    console.log('Batch Message View');
+    console.log('User ID:', this.userID);
+    repo.messageView?.batchUpsert(
+      this.displaymessages
+      .filter((message) => message.messageView.every(mv => mv.userID !== this.userID))
+      .map((message) => {
+        return {
+          userID: this.userID,
+          messageID: message.id,
+          timestamp: new Date().getTime(),
+        }
+      })
+    )
+    .then(() => {
+      console.log('Messages Batch Upserted');
+    }
+    )
+    .catch((error) => {
+      console.error('Error Batch Upserting:', error);
+    }
+    );
   }
 }
