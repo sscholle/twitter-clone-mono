@@ -5,7 +5,10 @@ import { filter, map, Observable } from "rxjs";
 import { inject } from "@angular/core";
 import { RelationParam } from "./interfaces/IRead";
 
-
+type ParamValueType = string | number | boolean | Date | null | undefined;
+type ParamType = ParamValueType | ParamValueType[] | Record<string, ParamValueType> | Record<string, ParamValueType[]>;
+// type SimpleOperator = "=" | "!=" | "<" | "<=" | ">" | ">=" | "in" | "not in" | "like" | "not like" | "contains" | "not contains" | "starts with" | "ends with";
+type ParamValue = [SimpleOperator, ParamValueType] | ParamValueType;
 
 export class ZeroRepository<S extends Schema, T extends Row<TableSchema>> extends BaseRepository<T, S> {
   private zeroService = inject(ZeroService<S>);
@@ -179,7 +182,7 @@ export class ZeroRepository<S extends Schema, T extends Row<TableSchema>> extend
   //   });
   // }
 
-  override find(queryParams: Record<string, string | string[]> = {}, relations?: RelationParam<S>[], orderBy?: Record<string, string>, limit?: number, start?: Partial<T>): Promise<T[]> {
+  override find(queryParams: Record<string, ParamValue> = {}, relations?: RelationParam<S>[], orderBy?: Record<string, string>, limit?: number, start?: Partial<T>): Promise<T[]> {
     return new Promise((resolve) => {
       try {
         const find = this.generateQueryObject(queryParams, relations, orderBy, limit, start);
@@ -200,7 +203,7 @@ export class ZeroRepository<S extends Schema, T extends Row<TableSchema>> extend
     });
   }
 
-  findSubscribe(queryParams: Record<string, string | string[]> = {}, relations?: RelationParam<S>[], orderBy?: Record<string, string>, limit?: number, start?: Partial<T>): Observable<T[]> {
+  findSubscribe(queryParams: Record<string, ParamValue> = {}, relations?: RelationParam<S>[], orderBy?: Record<string, string>, limit?: number, start?: Partial<T>): Observable<T[]> {
     const find = this.generateQueryObject(queryParams, relations, orderBy, limit, start);
     return this.query.useQuery(find)
       .pipe(
@@ -213,7 +216,7 @@ export class ZeroRepository<S extends Schema, T extends Row<TableSchema>> extend
       );
   }
 
-  generateQueryObject(queryParams: Record<string, string | string[]>, relations?: RelationParam<S>[], orderBy?: Record<string, string>, limit?: number, start?: Partial<T>): Query<S, string> {
+  generateQueryObject(queryParams: Record<string, ParamValue>, relations?: RelationParam<S>[], orderBy?: Record<string, string>, limit?: number, start?: Partial<T>): Query<S, string> {
     let find = this.baseQuery;
     relations?.forEach((relation) => {
       find = find.related(relation.table as any, (query) => relation.cb(query as Query<S, string>));

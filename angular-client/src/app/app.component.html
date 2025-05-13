@@ -8,19 +8,22 @@
 </main> -->
 <div class="container py-4">
   <!-- Navbar -->
-  <nav class="navbar navbar-expand-lg navbar-dark bg-glass rounded shadow">
+  <nav class="navbar navbar-expand-lg navbar-dark bg-glass rounded shadow mb-4">
     <div class="container-fluid">
-      <a class="navbar-brand" href="#">Twitter Clone</a>
+      <a class="navbar-brand" routerLink="/">Twitter Clone</a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
       </button>
       <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav ms-auto">
           <li class="nav-item">
-            <a class="nav-link active" href="#">Home</a>
+            <a class="nav-link" routerLink="/home" routerLinkActive="active" ariaCurrentWhenActive="page">Home</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="#">Explore</a>
+            <a class="nav-link" routerLink="/messages"routerLinkActive="active" ariaCurrentWhenActive="page">Explore</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" routerLink="/bookmarks"routerLinkActive="active" ariaCurrentWhenActive="page">Bookmarks</a>
           </li>
           <li class="nav-item">
             <a class="nav-link" href="#" (click)="login($event)">{{ isLoggedIn ? `Logout  (${user?.name})` : 'Login (random)' }}</a>
@@ -35,7 +38,7 @@
 	<!-- Footer -->
 	<footer class="bg-glass text-center text-lg-start mt-4">
 		<div class="text-center p-3">
-			© 2023 Twitter Clone
+			© 2025 Twitter Clone
 		</div>
 	</footer>
 </div>

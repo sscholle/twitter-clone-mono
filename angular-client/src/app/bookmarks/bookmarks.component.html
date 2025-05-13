@@ -1,12 +1,5 @@
-<div class="card bg-glass text-white shadow mb-3">
-	<div class="card-body">
-		<textarea class="form-control bg-transparent text-white border-0" rows="3" placeholder="What's happening?" [(ngModel)]="newMessage"></textarea>
-		<div class="d-flex justify-content-end mt-2">
-			<button class="btn btn-outline-light" (click)="createMessage()">Tweet</button>
-		</div>
-	</div>
-</div>
 
+<!-- Componentise these Message Lists -->
 <div *ngFor="let tweet of displaymessages" class="card bg-glass text-white shadow mb-3">
 	<div class="card-body pb-0 d-flex flex-nowrap flex-row">
 		<div class="">
@@ -34,7 +27,7 @@
 		</div>
 	</div>
 	<div class="card-footer border-top-1 bg-transparent p-0 d-flex flex-nowrap justify-content-between">
-		<button class="btn btn-sm btn-text col py-1 m-0" (click)="replyMessage(tweet.id)" placement="bottom" ngbTooltip="Reply" container="body">
+		<!-- <button class="btn btn-sm btn-text col py-1 m-0" (click)="replyMessage(tweet.id)" placement="bottom" ngbTooltip="Reply" container="body">
 			<i class="bi bi-chat"></i> {{ tweet.messageReplyCount }}
 		</button>
 		<button class="btn btn-sm btn-text col py-1 m-0" (click)="repostMessage(tweet.id)" placement="bottom" ngbTooltip="Repost" container="body">
@@ -42,31 +35,31 @@
 		</button>
 		<button class="btn btn-sm btn-text col py-1 m-0" (click)="likeMessage(tweet.id)" placement="bottom" ngbTooltip="Like" container="body">
 			<i class="bi bi-hand-thumbs-up"></i> {{ tweet.messageLikeCount}}
-		</button>
+		</button> -->
 		<button class="btn btn-sm btn-text col py-1 m-0">
 			<i class="bi bi-graph-up" placement="bottom" ngbTooltip="Views"container="body"></i> {{ tweet.messageViewCount }}
 		</button>
 		<div class="action-group col">
-			<button class="btn btn-text text-tertiary btn-sm" placement="bottom" ngbTooltip="Bookmark" container="body" (click)="bookmarkMessage(tweet.id)">
-				<i class="bi" [ngClass]="{'bi-bookmark': !isBookmarked(tweet.id), 'bi-bookmark-fill': isBookmarked(tweet.id)}"></i>
+			<button class="btn btn-text text-tertiary btn-sm" placement="bottom" ngbTooltip="Bookmark" container="body">
+				<i class="bi bi-bookmark"></i>
 			</button>
-			<button class="btn btn-text text-tertiary btn-sm" placement="bottom" ngbTooltip="Share" container="body" (click)="shareMessage(tweet.id)">
+			<button class="btn btn-text text-tertiary btn-sm" placement="bottom" ngbTooltip="Share" container="body">
 				<i class="bi bi-share"></i>
 			</button>
 		</div>
 	</div>
 </div>
 
-<!-- <div class="btn-toolbar mb-3">
+<!-- <div class="btn-toolbar">
 	<ngb-pagination
 		(pageChange)="triggerPagination($event)"
 		[(page)]="page"
 		[pageSize]="pageSize"
-		[collectionSize]="allMessages?.length || 0"
+		[collectionSize]="allMessages.length || 0"
 		[maxSize]="6" />
 	<div class="d-flex flex-grow-1 justify-content-end align-items-center">
 		<em>
-				Showing {{ displaymessages.length }} of {{ allMessages?.length }} messages.
+				Showing {{ displaymessages.length }} of {{ allMessages.length }} messages.
 		</em>
 	</div>
 </div> -->

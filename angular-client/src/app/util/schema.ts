@@ -183,7 +183,12 @@ export type TopicMessage = Row<typeof schema.tables.topic_message>;
 export type MessageView = Row<typeof schema.tables.message_view>;
 export type MessageViewWithUser = Row<typeof schema.tables.message_view> & {
   user: Row<typeof schema.tables.user>;
-  message: Row<typeof schema.tables.message>;
+  message: Message & {
+    sender: User;
+    medium: Medium;
+    topicMessage?: TopicMessage[];
+    messageView: MessageView[];
+  };
 };
 
 // The contents of your decoded JWT.

@@ -10,6 +10,7 @@ import Cookies from "js-cookie";
 import { EntityViewPermission } from '../my-entity-view/machine';
 import { allRepositories as repo } from '../shared/allRepos';
 import { randID } from '../util/rand';
+import { auditTime, throttleTime } from 'rxjs';
 
 interface TopicMessageWithTopic extends TopicMessage {
   topic: Topic
@@ -103,6 +104,7 @@ export class MessagesComponent implements OnInit {
       this.pageSize,
       this.startRecord || undefined,
     )
+    .pipe(auditTime(100))
     .subscribe((messages) => {
       console.log('Messages:', messages);
       // this.displaymessages = messages as DisplayMessage[];
@@ -126,7 +128,7 @@ export class MessagesComponent implements OnInit {
       });
       // @TODO: Notify Angular that the data has changed
       this.changeDetectorRef.detectChanges();
-      // this.batchMessageView();
+      this.batchMessageView();
     })
   }
 
@@ -328,6 +330,43 @@ export class MessagesComponent implements OnInit {
     // .catch((error) => {
     //   console.error('Error creating message:', error);
     // });
+  }
+
+  bookmarkMessage(messageID: string) {
+    const message = this.allMessages?.find((message) => message.id === messageID);
+    if (!message) {
+      console.error("Message not found", messageID);
+      return;
+    }
+    repo.messageView?.update(messageID, {
+      userID: this.userID,
+      messageID,
+      bookmark: true,
+      bookmarkTimestamp: new Date().getTime(),
+    })
+    .then(() => {
+      console.log('Message Bookmarked');
+    })
+    .catch((error) => {
+      console.error('Error Bookmarking message:', error);
+    });
+  }
+  isBookmarked(messageID: string) {
+    const message = this.displaymessages?.find((message) => message.id === messageID);
+    if (!message) {
+      console.error("Message not found", messageID);
+      return false;
+    }
+    const messageView = message.messageView.find((view) => view.userID === this.userID);
+    if (!messageView) {
+      console.error("MessageView not found", messageID);
+      return false;
+    }
+    return messageView.bookmark;
+  }
+
+  shareMessage(messageID: string) {
+    console.log("Share message", messageID);
   }
 
   /**
