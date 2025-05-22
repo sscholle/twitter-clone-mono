@@ -1,5 +1,9 @@
+name: Twitter Clone
+# description: Docker Compose file for a Twitter clone application
+
+
 services:
-  twitter_clone_postgres:
+  postgres:
     image: postgres:16.2-alpine
     shm_size: 1g
     user: postgres
@@ -31,6 +35,33 @@ services:
       - ./postgres/data:/var/lib/postgresql/data
       - ./postgres/config/postgresql.conf:/var/lib/postgresql/data/postgresql.conf
       - ./postgres/:/docker-entrypoint-initdb.d
+  # zero-cache:
+  #   restart: always
+  #   needs:
+  #     - postgres
+  #   ports:
+  #     - 4848:4848
+  #   environment:
+  #     - POSTGRES_HOST=postgres
+  #     - POSTGRES_USER=user
+  #     - POSTGRES_PASSWORD=password
+  #     - POSTGRES_DB=twitter_clone
+  #     - POSTGRES_PORT=5432
+  #     - POSTGRES_SSLMODE=disable
+  #   image: zero-cache:latest
+  #   build:
+  #     context: .
+  #     dockerfile: ./zero-cache/zero-cache.Dockerfile 
+  # auth-server:
+  #   # image: auth-server:latest
+  #   build:
+  #     context: .
+  #     dockerfile: ./auth-server/auth-server.dockerfile
+  # angular-client:
+  #   image: angular-client:latest
+  #   build:
+  #     context: .
+  #     dockerfile: ./angular-client/angular-client.Dockerfile
 
 # volumes:
 #   twitter_clone_pgdata:

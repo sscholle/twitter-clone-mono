@@ -1,15 +1,10 @@
 import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
-import { Medium, Message, MessageView, MessageViewWithUser, schema, Schema, Topic, TopicMessage, User } from '../util/schema';
-import { MyEntityViewComponent } from '../my-entity-view/my-entity-view.component';
+import { Medium, Message, MessageView, MessageViewWithUser, Schema, Topic, TopicMessage, User } from '../util/schema';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { NgbDropdown, NgbDropdownModule, NgbModal, NgbPaginationModule, NgbTooltipModule } from '@ng-bootstrap/ng-bootstrap';
+import { NgbDropdownModule, NgbPaginationModule, NgbTooltipModule } from '@ng-bootstrap/ng-bootstrap';
 import { ZeroService } from 'zero-angular';
-import { escapeLike, table } from '@rocicorp/zero';
-import Cookies from "js-cookie";
-import { EntityViewPermission } from '../my-entity-view/machine';
 import { allRepositories as repo } from '../shared/allRepos';
-import { randID } from '../util/rand';
 import { auditTime, throttleTime } from 'rxjs';
 
 interface TopicMessageWithTopic extends TopicMessage {
@@ -101,28 +96,7 @@ export class BookmarksComponent implements OnInit {
         return m;
       });
       this.displaymessages = messages as DisplayMessage[];
-      // this.displaymessages = messageViews.map((messageViews) => {
-      //   const mv = messageViews as MessageViewWithUser;
-      //   const m = mv.message || [];
-      //   const topicMessage = m.topicMessage || [];
-      //   const topicMessageCount = topicMessage.length;
-      //   const messageViewCount = m.messageView.length;
-      //   const messageLikeCount = m.messageView.filter((view) => view.like).length;
-      //   const messageReplyCount = 0; // TODO: implement reply count
-      //   const messageRepostCount = 0; // TODO: implement repost count
-      //   return {
-      //     // ...mv,
-      //     ...m,
-      //     topicMessage,
-      //     sender: mv.user,
-      //     topicMessageCount,
-      //     messageViewCount,
-      //     messageReplyCount,
-      //     messageRepostCount,
-      //     messageLikeCount,
-      //   };
-      // });
-      // @TODO: Notify Angular that the data has changed
+      // @TODO: consolidate how all the Entities are queried via Services - and use more Granular Components for Display
       this.changeDetectorRef.detectChanges();
     })
   }

@@ -50,15 +50,15 @@ export class MyEntityViewComponent implements OnInit, OnDestroy {
     mediumID: string,
     senderID: string,
     body: string,
+    id?: string,
+    timestamp?: number,
   ): Message {
-    const id = randID();
-    const timestamp = new Date().getTime();
     return {
-      id,
+      id: id || randID(),
       senderID,
       mediumID,
       body,
-      timestamp,
+      timestamp: timestamp || new Date().getTime(),
     };
   }
 
@@ -121,11 +121,13 @@ export class MyEntityViewComponent implements OnInit, OnDestroy {
             });
           }),
           tryUpdateEntity: fromPromise(({ input }: { input: EntityViewContext }) => {
-            const message = this.messageShape(
-              this.selectedMedium,
-              this.zeroService.getZero().userID,// TODO: get user id from auth
-              this.message,
-            )
+            const message: Partial<Message> = {
+              mediumID: this.selectedMedium,
+              body: this.message,
+              senderID: this.zeroService.getZero().userID,
+              id: input.entityId as string,
+            };
+            console.log('Updating message:', input.entityId, message);
             return new Promise((resolve) => {
               repo.message?.update(input.entityId as string, message)
               .then(() => {

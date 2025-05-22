@@ -171,3 +171,12 @@ body {
       display: none;
   }
 }
+
+
+.card {
+  .card-footer {
+    button:disabled {
+      border-color: transparent;
+    }
+  }
+}

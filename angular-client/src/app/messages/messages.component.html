@@ -7,7 +7,7 @@
 	</div>
 </div>
 
-<div *ngFor="let tweet of displaymessages" class="card bg-glass text-white shadow mb-3">
+<div *ngFor="let tweet of displaymessages; trackBy trackByFn" class="card bg-glass text-white shadow mb-3">
 	<div class="card-body pb-0 d-flex flex-nowrap flex-row">
 		<div class="">
 			<img src="avatars/avatar.jpeg" alt="" width="40" height="40"
@@ -25,7 +25,7 @@
 							<i class="bi bi-three-dots"></i>
 						</button>
 						<div ngbDropdownMenu [attr.aria-labelledby]="'context-menu-'+tweet.id" class="d-blockmx-0 border-0 shadow">
-							<button ngbDropdownItem class="d-flex gap-2 align-items-center"><i class="bi bi-pencil-fill"></i> Edit</button>
+							<button ngbDropdownItem class="d-flex gap-2 align-items-center" (click)="editMessage(tweet.id)"><i class="bi bi-pencil-fill"></i> Edit</button>
 						</div>
 					</div>
 				</div>
@@ -34,23 +34,23 @@
 		</div>
 	</div>
 	<div class="card-footer border-top-1 bg-transparent p-0 d-flex flex-nowrap justify-content-between">
-		<button class="btn btn-sm btn-text col py-1 m-0" (click)="replyMessage(tweet.id)" placement="bottom" ngbTooltip="Reply" container="body">
+		<button class="btn btn-sm btn-text col py-1 m-0" (click)="replyMessage(tweet.id)" [disabled]="true" placement="bottom" ngbTooltip="Reply" container="body">
 			<i class="bi bi-chat"></i> {{ tweet.messageReplyCount }}
 		</button>
-		<button class="btn btn-sm btn-text col py-1 m-0" (click)="repostMessage(tweet.id)" placement="bottom" ngbTooltip="Repost" container="body">
+		<button class="btn btn-sm btn-text col py-1 m-0" (click)="repostMessage(tweet.id)" [disabled]="true" placement="bottom" ngbTooltip="Repost" container="body">
 			<i class="bi bi-recycle"></i> {{ tweet.messageRepostCount }}
 		</button>
 		<button class="btn btn-sm btn-text col py-1 m-0" (click)="likeMessage(tweet.id)" placement="bottom" ngbTooltip="Like" container="body">
 			<i class="bi bi-hand-thumbs-up"></i> {{ tweet.messageLikeCount}}
 		</button>
 		<button class="btn btn-sm btn-text col py-1 m-0">
-			<i class="bi bi-graph-up" placement="bottom" ngbTooltip="Views"container="body"></i> {{ tweet.messageViewCount }}
+			<i class="bi bi-graph-up" placement="bottom" ngbTooltip="Views" container="body"></i> {{ tweet.messageViewCount }}
 		</button>
 		<div class="action-group col">
 			<button class="btn btn-text text-tertiary btn-sm" placement="bottom" ngbTooltip="Bookmark" container="body" (click)="bookmarkMessage(tweet.id)">
 				<i class="bi" [ngClass]="{'bi-bookmark': !isBookmarked(tweet.id), 'bi-bookmark-fill': isBookmarked(tweet.id)}"></i>
 			</button>
-			<button class="btn btn-text text-tertiary btn-sm" placement="bottom" ngbTooltip="Share" container="body" (click)="shareMessage(tweet.id)">
+			<button class="btn btn-text text-tertiary btn-sm" placement="bottom" ngbTooltip="Share" container="body" [disabled]="true" (click)="shareMessage(tweet.id)">
 				<i class="bi bi-share"></i>
 			</button>
 		</div>

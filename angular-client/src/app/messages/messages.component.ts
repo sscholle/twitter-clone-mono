@@ -10,7 +10,7 @@ import Cookies from "js-cookie";
 import { EntityViewPermission } from '../my-entity-view/machine';
 import { allRepositories as repo } from '../shared/allRepos';
 import { randID } from '../util/rand';
-import { auditTime, throttleTime } from 'rxjs';
+import { auditTime, BehaviorSubject, filter, take, throttleTime } from 'rxjs';
 
 interface TopicMessageWithTopic extends TopicMessage {
   topic: Topic
@@ -104,7 +104,7 @@ export class MessagesComponent implements OnInit {
       this.pageSize,
       this.startRecord || undefined,
     )
-    .pipe(auditTime(100))
+    // .pipe(throttleTime(200))
     .subscribe((messages) => {
       console.log('Messages:', messages);
       // this.displaymessages = messages as DisplayMessage[];
@@ -128,10 +128,25 @@ export class MessagesComponent implements OnInit {
       });
       // @TODO: Notify Angular that the data has changed
       this.changeDetectorRef.detectChanges();
-      this.batchMessageView();
+      // setTimeout(() => {
+      // this.batchMessageView();
+      // }, 2000);
+      this.messagesLoaded.next(true);
     })
+
+    this.messagesLoaded.pipe(
+      filter((loaded) => loaded),
+      // throttleTime(2000),
+      auditTime(2000),
+      take(1),
+    )
+    .subscribe(() => {
+      console.log('Messages Loaded');
+      this.batchMessageView();
+    });
   }
 
+  messagesLoaded: BehaviorSubject<boolean> = new BehaviorSubject(false);
   filterUser: string = "";
   filterText: string = "";
   hasFilters: boolean = false;
@@ -160,15 +175,6 @@ export class MessagesComponent implements OnInit {
     this.filterText = filterText;
     this.triggerFetch();
   }
-
-  toggleLogin = async () => {
-    if (this.zeroService.getZero().userID === "anon") {
-      await fetch("http://localhost:5173/api/login", { credentials: "include", mode: "no-cors" });
-    } else {
-      Cookies.remove("jwt");
-    }
-    location.reload();
-  };
 
   inspect = async () => {
     alert("Open dev tools console tab to view inspector output.");
@@ -302,7 +308,7 @@ export class MessagesComponent implements OnInit {
     repo.messageView?.update(messageID, {
       userID: this.userID,
       messageID,
-      like: true,
+      like: true,// TODO: implement toggle
       likeTimestamp: new Date().getTime(),
     })
     .then(() => {
@@ -351,15 +357,16 @@ export class MessagesComponent implements OnInit {
       console.error('Error Bookmarking message:', error);
     });
   }
+
   isBookmarked(messageID: string) {
     const message = this.displaymessages?.find((message) => message.id === messageID);
     if (!message) {
-      console.error("Message not found", messageID);
+      // console.error("Message not found", messageID);
       return false;
     }
     const messageView = message.messageView.find((view) => view.userID === this.userID);
     if (!messageView) {
-      console.error("MessageView not found", messageID);
+      // console.error("MessageView not found", messageID);
       return false;
     }
     return messageView.bookmark;
@@ -376,6 +383,7 @@ export class MessagesComponent implements OnInit {
   batchMessageView(){
     console.log('Batch Message View');
     console.log('User ID:', this.userID);
+    if(this.userID === 'anon') return;
     repo.messageView?.batchUpsert(
       this.displaymessages
       .filter((message) => message.messageView.every(mv => mv.userID !== this.userID))
@@ -395,5 +403,24 @@ export class MessagesComponent implements OnInit {
       console.error('Error Batch Upserting:', error);
     }
     );
+  }
+
+  trackByFn(index: number, item: DisplayMessage) {
+    return item.id;
+  }
+  trackByFnMedium(index: number, item: Medium) {
+    return item.id;
+  }
+  trackByFnUser(index: number, item: User) {
+    return item.id;
+  }
+  trackByFnTopic(index: number, item: Topic) {
+    return item.id;
+  }
+  trackByFnTopicMessage(index: number, item: TopicMessage) {
+    return item.topicID + item.messageID;
+  }
+  trackByFnMessageView(index: number, item: MessageView) {
+    return item.userID + item.messageID;
   }
 }

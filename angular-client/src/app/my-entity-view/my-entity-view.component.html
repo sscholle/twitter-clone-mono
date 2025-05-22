@@ -16,7 +16,7 @@
   <div>
     <label for="message" class="form-label">Message</label>
     <textarea id="message" class="form-control" [(ngModel)]="message" name="message" rows="3"></textarea>
-
+		{{ message }}
     <label for="medium" class="form-label mt-3">Medium</label>
     <select id="medium" class="form-select" [(ngModel)]="selectedMedium" name="medium">
       <option *ngFor="let medium of mediums" [value]="medium.id">{{medium.name }}</option>

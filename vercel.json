@@ -1,0 +1,13 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/index"
+    }
+  ],
+  "framework": "Angular",
+  "root": "angular-client/",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist/browser/ng-xstate-entity-view-state"
+
+}

@@ -1,0 +1,80 @@
+# Experimental Github Action to deploy to Docker Swarm
+# This is a work in progress and not yet fully functional
+# This action deploys a Docker stack to a remote Docker Swarm cluster using SSH
+# It requires the following secrets to be set in the repository:
+# - DEPLOY_SSH_PRIVATE_KEY: The private SSH key to use for authentication
+# - DEPLOY_SSH_PUBLIC_KEY: The public SSH key to use for authentication
+# - DEPLOY_SSH_HOST: The hostname or IP address of the remote Docker Swarm cluster
+# - DEPLOY_SSH_USER: The username to use for SSH authentication
+# - DEPLOY_SSH_PORT: The port to use for SSH authentication (default is 22)
+# - DEPLOY_SSH_KEY: The path to the SSH key to use for authentication (default is ~/.ssh/id_rsa)
+name: pipeline
+on:
+ push:
+   branches:
+     - "main"
+
+permissions:
+  packages: write
+
+jobs:
+  run-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm install
+      - name: Run tests
+        run: npm test
+
+  build-and-push-image:
+    runs-on: ubuntu-latest
+    needs:
+      - run-tests
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: https://ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/dreamsofcode-io/zenstats:latest
+            ghcr.io/dreamsofcode-io/zenstats:${{ github.sha }}
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs:
+      - build-and-push-image
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: create env file
+      run: |
+        echo "GIT_COMMIT_HASH=${{ github.sha }}" >> ./envfile
+
+    - name: Docker Stack Deploy
+      uses: cssnr/stack-deploy-action@v1
+      with:
+        name: zenfulstats
+        file: docker-stack.yaml
+        host: zenful.site
+        user: deploy
+        ssh_key: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
+        env_file: ./envfile

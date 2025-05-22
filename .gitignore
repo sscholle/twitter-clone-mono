@@ -1,4 +1,5 @@
 .sst
+.env
 
 # Logs
 logs

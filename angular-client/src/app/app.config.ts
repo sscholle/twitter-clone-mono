@@ -8,10 +8,16 @@ import { provideZero } from 'zero-angular';
 import { decodeJwt } from 'jose';
 import Cookies from 'js-cookie';
 import { provideServiceWorker } from '@angular/service-worker';
+import { environment } from '../environments/environment';
 
 const encodedJWT = Cookies.get("jwt");
 const decodedJWT = encodedJWT && decodeJwt(encodedJWT);
 const userID = decodedJWT?.sub ? (decodedJWT.sub as string) : "anon";
+console.log("userID", userID);
+console.log("encodedJWT", encodedJWT);
+console.log("decodedJWT", decodedJWT);
+console.log("environment", environment);
+console.log("schema", schema);
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -21,7 +27,7 @@ export const appConfig: ApplicationConfig = {
     provideZero(new Zero({
       userID,
       auth: () => encodedJWT,
-      server: "http://localhost:4848",
+      server: environment.cache_server || 'http://localhost:4848',
       schema,
       kvStore: "idb",
     })),
