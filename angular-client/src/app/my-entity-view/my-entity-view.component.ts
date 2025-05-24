@@ -129,7 +129,7 @@ export class MyEntityViewComponent implements OnInit, OnDestroy {
             };
             console.log('Updating message:', input.entityId, message);
             return new Promise((resolve) => {
-              repo.message?.update(input.entityId as string, message)
+              repo.message?.update(message)
               .then(() => {
                 console.log('Updated message:', input.data);
                 resolve(true);
@@ -141,8 +141,14 @@ export class MyEntityViewComponent implements OnInit, OnDestroy {
             });
           }),
           tryDeleteEntity: fromPromise(({ input }: { input: EntityViewContext }) => {
+            const message: Partial<Message> = {
+              mediumID: this.selectedMedium,
+              body: this.message,
+              senderID: this.zeroService.getZero().userID,
+              id: input.entityId as string,
+            };
             return new Promise((resolve) => {
-              repo.message?.delete(input.entityId as string)
+              repo.message?.delete(message as Message)
               .then(() => {
                 console.log('Deleted message:', input.entityId);
                 resolve(true);

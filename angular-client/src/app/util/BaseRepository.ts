@@ -9,7 +9,7 @@ export abstract class BaseRepository<T, S extends Schema> implements IWrite<T>, 
     create(item: T): Promise<boolean> {
         throw new Error("Method not implemented.");
     }
-    update(id: string, item: T): Promise<boolean> {
+    update(item: T): Promise<boolean> {
         throw new Error("Method not implemented.");
     }
     upsert(item: T): Promise<boolean> {
@@ -30,7 +30,7 @@ export abstract class BaseRepository<T, S extends Schema> implements IWrite<T>, 
     batchDeleteByID(ids: string[]): Promise<boolean> {
         throw new Error("Method not implemented.");
     }
-    delete(id: string): Promise<boolean> {
+    delete(item: T): Promise<boolean> {
         throw new Error("Method not implemented.");
     }
     find(queryParams: Record<string, string>, relations?: RelationParam<S>[], orderBy?: Record<string, string>, limit?: 0 ): Promise<T[]> {

@@ -8,7 +8,16 @@ import { RelationParam } from "./interfaces/IRead";
 type ParamValueType = string | number | boolean | Date | null | undefined;
 type ParamType = ParamValueType | ParamValueType[] | Record<string, ParamValueType> | Record<string, ParamValueType[]>;
 // type SimpleOperator = "=" | "!=" | "<" | "<=" | ">" | ">=" | "in" | "not in" | "like" | "not like" | "contains" | "not contains" | "starts with" | "ends with";
-type ParamValue = [SimpleOperator, ParamValueType] | ParamValueType;
+// type ParamValue = [SimpleOperator, ParamValueType] | ParamValueType;
+type ParamValue = [SimpleOperator, ParamType] | ParamType;
+
+export interface QueryConfig<S extends Schema, T extends Row<TableSchema>> {
+  queryParams: Record<string, ParamValue>;
+  relations?: RelationParam<S>[];
+  orderBy?: Record<string, string>;
+  limit?: number;
+  start?: Partial<T>
+}
 
 export class ZeroRepository<S extends Schema, T extends Row<TableSchema>> extends BaseRepository<T, S> {
   private zeroService = inject(ZeroService<S>);
@@ -47,7 +56,7 @@ export class ZeroRepository<S extends Schema, T extends Row<TableSchema>> extend
     });
   }
 
-  override update(id: string, item: Partial<T>): Promise<boolean> {
+  override update(item: Partial<T>): Promise<boolean> {
     return new Promise((resolve) => {
       try {
         this.baseMutate.update({ ...item, ...this.mapItemToIdField(item as T) } as any);
@@ -169,18 +178,18 @@ export class ZeroRepository<S extends Schema, T extends Row<TableSchema>> extend
   //   });
   // }
 
-  // override delete(id: string): Promise<boolean> {
-  //   return new Promise((resolve) => {
-  //     try {
-  //       this.baseMutate.delete({ [this.idField]: id } as any);
-  //       resolve(true);
-  //     }
-  //     catch (error) {
-  //       console.error("Error deleting item:", error);
-  //       resolve(false);
-  //     }
-  //   });
-  // }
+  override delete(item: T): Promise<boolean> {
+    return new Promise((resolve) => {
+      try {
+        this.baseMutate.delete({ ...this.mapItemToIdField(item) } as any);
+        resolve(true);
+      }
+      catch (error) {
+        console.error("Error deleting item:", error);
+        resolve(false);
+      }
+    });
+  }
 
   override find(queryParams: Record<string, ParamValue> = {}, relations?: RelationParam<S>[], orderBy?: Record<string, string>, limit?: number, start?: Partial<T>): Promise<T[]> {
     return new Promise((resolve) => {

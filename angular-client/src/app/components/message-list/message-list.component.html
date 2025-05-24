@@ -1,0 +1,75 @@
+<!-- <div class="card bg-glass text-white shadow mb-3">
+	<div class="card-body">
+		<textarea class="form-control bg-transparent text-white border-0" rows="3" placeholder="What's happening?" [(ngModel)]="newMessage"></textarea>
+		<div class="d-flex justify-content-end mt-2">
+			<button class="btn btn-outline-light" (click)="createMessage()">Tweet</button>
+		</div>
+	</div>
+</div> -->
+<ng-container *ngIf="messageItemTemplate">
+
+<div *ngFor="let tweet of messages; trackBy trackByFn" class="card bg-glass text-white shadow mb-3">
+	<div class="card-body pb-0 d-flex flex-nowrap flex-row">
+		<div class="">
+			<img src="avatars/avatar.jpeg" alt="" width="40" height="40"
+			class="rounded-circle me-2">
+		</div>
+		<div class="d-flex mb-2 justify-content-between flex-column flex-grow-1">
+			<div class="head d-flex flex-row">
+				<div class="flex-grow-1">
+					<h6 class="mb-0 d-inline me-2">{{ tweet.sender.name }}</h6>
+					<small class="text-muted">{{ tweet.timestamp | date }}</small>
+				</div>
+				<div class="">
+					<div ngbDropdown class="d-flex" *ngIf="tweet.senderID === userID">
+						<button type="button" class="btn btn-text btn-sm py-0 m-0" ngbDropdownToggle [attr.id]="'context-menu-'+tweet.id">
+							<i class="bi bi-three-dots"></i>
+						</button>
+						<div ngbDropdownMenu [attr.aria-labelledby]="'context-menu-'+tweet.id" class="mx-0 border-0 shadow">
+							<button ngbDropdownItem class="d-flex gap-2 align-items-center" (click)="editMessage(tweet.id)"><i class="bi bi-pencil-fill"></i> Edit</button>
+						</div>
+					</div>
+				</div>
+			</div>
+			<p class="mb-0">{{ tweet.body }}</p>
+		</div>
+	</div>
+	<div class="card-footer border-top-1 bg-transparent p-0 d-flex flex-nowrap justify-content-between">
+		<!-- <ng-container *ngTemplateOutlet="messageItemTemplate.templateRef; context: tweet"></ng-container> -->
+		<button class="btn btn-sm btn-text col py-1 m-0" (click)="replyMessage(tweet.id)" [disabled]="true" placement="bottom" ngbTooltip="Reply" container="body">
+			<i class="bi bi-chat"></i> {{ tweet.messageReplyCount }}
+		</button>
+		<button class="btn btn-sm btn-text col py-1 m-0" (click)="repostMessage(tweet.id)" [disabled]="true" placement="bottom" ngbTooltip="Repost" container="body">
+			<i class="bi bi-recycle"></i> {{ tweet.messageRepostCount }}
+		</button>
+		<button class="btn btn-sm btn-text col py-1 m-0" (click)="likeMessage(tweet.id)" placement="bottom" ngbTooltip="Like" container="body">
+			<i class="bi bi-hand-thumbs-up"></i> {{ tweet.messageLikeCount}}
+		</button>
+		<button class="btn btn-sm btn-text col py-1 m-0">
+			<i class="bi bi-graph-up" placement="bottom" ngbTooltip="Views" container="body"></i> {{ tweet.messageViewCount }}
+		</button>
+		<div class="action-group col">
+			<button class="btn btn-text text-tertiary btn-sm" placement="bottom" ngbTooltip="Bookmark" container="body" (click)="bookmarkMessage(tweet.id)">
+				<i class="bi" [ngClass]="{'bi-bookmark': !isBookmarked(tweet.id), 'bi-bookmark-fill': isBookmarked(tweet.id)}"></i>
+			</button>
+			<button class="btn btn-text text-tertiary btn-sm" placement="bottom" ngbTooltip="Share" container="body" [disabled]="true" (click)="shareMessage(tweet.id)">
+				<i class="bi bi-share"></i>
+			</button>
+		</div>
+	</div>
+</div>
+
+</ng-container>
+<!-- <div class="btn-toolbar mb-3">
+	<ngb-pagination
+		(pageChange)="triggerPagination($event)"
+		[(page)]="page"
+		[pageSize]="pageSize"
+		[collectionSize]="allMessages?.length || 0"
+		[maxSize]="6" />
+	<div class="d-flex flex-grow-1 justify-content-end align-items-center">
+		<em>
+				Showing {{ displaymessages.length }} of {{ allMessages?.length }} messages.
+		</em>
+	</div>
+</div> -->

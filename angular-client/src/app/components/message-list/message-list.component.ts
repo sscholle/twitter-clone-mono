@@ -1,114 +1,104 @@
-import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
-import { Medium, Message, MessageView, schema, Schema, Topic, TopicMessage, User } from '../util/schema';
-import { MyEntityViewComponent } from '../my-entity-view/my-entity-view.component';
+import { AfterViewInit, ChangeDetectorRef, Component, contentChild, ContentChild, ContentChildren, Directive, ElementRef, EmbeddedViewRef, EventEmitter, inject, Injector, Input, OnChanges, OnInit, Output, Query, QueryList, SimpleChanges, TemplateRef, ViewChildren } from '@angular/core';
+import { Medium, Message, MessageView, schema, Schema, Topic, TopicMessage, User } from '../../util/schema';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { NgbDropdown, NgbDropdownModule, NgbModal, NgbPaginationModule, NgbTooltipModule } from '@ng-bootstrap/ng-bootstrap';
+import { NgbDropdownModule, NgbModal, NgbPaginationModule, NgbTooltipModule } from '@ng-bootstrap/ng-bootstrap';
 import { ZeroService } from 'zero-angular';
-import { escapeLike } from '@rocicorp/zero';
-import Cookies from "js-cookie";
-import { EntityViewPermission } from '../my-entity-view/machine';
-import { allRepositories as repo } from '../shared/allRepos';
-import { randID } from '../util/rand';
-import { auditTime, BehaviorSubject, filter, take, throttleTime } from 'rxjs';
+import { DisplayMessage } from '../../shared/DisplayMessage';
+import { auditTime, BehaviorSubject, filter, Observable, take } from 'rxjs';
+import { QueryConfig } from '../../util/ZeroRepository';
+import { allRepositories as repo } from '../../shared/allRepos';
+import { MyEntityViewComponent } from '../../my-entity-view/my-entity-view.component';
+import { EntityViewPermission } from '../../my-entity-view/machine';
+import { randID } from '../../util/rand';
 
-interface TopicMessageWithTopic extends TopicMessage {
-  topic: Topic
-}
-interface DisplayMessage extends Message {
-  sender: User,
-  medium: Medium
-  topicMessage?: TopicMessageWithTopic[],
-  messageView: MessageView[],
-  // generated (Zero does not support aggregation functions yet)
-  topicMessageCount?: number,
-  messageViewCount?: number,
-  messageReplyCount?: number,
-  messageRepostCount?: number,
-  messageLikeCount?: number,
-}
-@Component({
-  selector: 'components-messages',
-  imports: [CommonModule, FormsModule, NgbPaginationModule, NgbDropdownModule, NgbTooltipModule],
-  templateUrl: './messages.component.html',
-  styleUrl: './messages.component.scss'
+
+@Directive({
+  selector: '[tcMessageItem]',
+  standalone: true
 })
-export class MessagesComponent implements OnInit {
-  zeroService = inject(ZeroService<Schema>);
-  // zeroQuery = inject(QueryService);
-	modalService = inject(NgbModal);
-  changeDetectorRef = inject(ChangeDetectorRef);
+export class MessageItemDirective{
+  constructor(public templateRef: TemplateRef<DisplayMessage>) {
+  }
+  // static ngTemplateContextGuard(dir: MessageItemDirective, ctx: any): ctx is TemplateRef<DisplayMessage> {
+  //   return true;
+  // }
+}
 
-  users: User[] | null = null;
+@Component({
+  selector: 'tc-message-list',
+  imports: [CommonModule, NgbPaginationModule, NgbDropdownModule, NgbTooltipModule],
+  templateUrl: './message-list.component.html',
+  styleUrl: './message-list.component.scss'
+})
+export class MessageList implements OnInit, AfterViewInit, OnChanges {
+  @Input() queryConfig: QueryConfig<Schema, Message> | undefined = undefined;
+  // @Input() messageQuery: Observable<DisplayMessage[]> | null = null;
+  messages: DisplayMessage[] = [];
+
+
+  ngAfterViewInit(): void {
+    console.log("messageItemTemplate", this.messageItemTemplate);
+  }
+  // @Output() replyToMessage = new EventEmitter<Message>();
+  // @Output() repostMessage = new EventEmitter<Message>();
+  // @Output() likeMessage = new EventEmitter<Message>();
+  // @Output() bookmarkMessage = new EventEmitter<Message>();
+  // @Output() deleteMessage = new EventEmitter<Message>();
+  // @Output() editMessage = new EventEmitter<Message>();
+  // messageItemTemplate = contentChild.required(MessageItemDirective);
+  @ContentChild(MessageItemDirective) messageItemTemplate: MessageItemDirective | null = null;
+  // @ViewChildren('messageItemMedium') messageItemMediums: any;
+
+  zeroService = inject(ZeroService<Schema>);
+  modalService = inject(NgbModal);
+  changeDetectorRef = inject(ChangeDetectorRef);
+  userID: string = this.zeroService.getZero().userID;
   mediums: Medium[] | null = null;
-  allMessages: Message[] | null = null;
-  userID: string = this.zeroService.getZero().userID;// TODO: store this in a service
-  user: User | null = null;
 
   ngOnInit(): void {
-    if(this.userID === "anon") {
-      console.log("User is anonymous");
-    } else {
-      console.log(repo.user);
-      repo.user?.findOne(this.userID || "")
-      .then((user) => {
-        console.log('User:', user);
-        this.user = user as User;
-      });
-    }
-    repo.user?.find()
-    .then((users) => {
-      console.log('Users:', users);
-      this.users = users as User[];
-    });
     repo.medium?.find()
     .then((mediums) => {
       console.log('Mediums:', mediums);
       this.mediums = mediums as Medium[];
     });
-    repo.message?.findSubscribe()
-    .subscribe((messages) => {
-      console.log('Messages:', messages);
-      this.allMessages = messages as Message[];
-    });
-    this.triggerFetch();
+    if (!this.queryConfig) {
+      console.warn('No messageQuery provided, using default query');
+      // this.messageQuery = this.zeroService.getZero().query<DisplayMessage>(schema.tables.message, {
+      //   where: {
+      //     userID: this.userID,
+      //   },
+      //   orderBy: [['timestamp', 'desc']],
+      // }).pipe(
+      //   // map((messages) => messages as DisplayMessage[]),
+      //   // filter((messages) => messages.length > 0),
+      // );
+    }else {
+      this.triggerFetch();
+    }
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if( changes['queryConfig']) {
+      console.log('Query Config Changed:', changes['queryConfig'].currentValue);
+      // If queryConfig has changed, we need to re-fetch the messages
+      this.triggerFetch();
+    }
+      // console.log('Query Config Changed:', changes['queryConfig']);
+      // changes.queryConfig && this.triggerFetch();
   }
 
   triggerFetch(){
-    this.hasFilters = !!(this.filterUser || this.filterText);
     repo.message?.findSubscribe(
-      {
-        ...(this.filterUser ? { "senderID": this.filterUser } : {}),
-        ...(this.filterText ? { "body": ["LIKE", `%${escapeLike(this.filterText)}%`] } : {}),
-      },
-      [
-        {
-          table: "medium",
-          cb: (q) => q,
-        },
-        {
-          table: "sender",
-          cb: (q) => q,
-        },
-        {
-          table: "topicMessage",
-          cb: (q) => q.related("topic" as never),
-        },
-        {
-          table: "messageView",
-          cb: (q) => q,
-          // cb: (q) => q.related("topicMessage" as never),
-        }
-      ],
-      { "timestamp": "desc" },
+      this.queryConfig?.queryParams || {},
+      this.queryConfig?.relations || [],
+      this.queryConfig?.orderBy || { timestamp: 'desc' },
       this.pageSize,
       this.startRecord || undefined,
     )
-    // .pipe(throttleTime(200))
     .subscribe((messages) => {
       console.log('Messages:', messages);
       // this.displaymessages = messages as DisplayMessage[];
-      this.displaymessages = messages.map((message) => {
+      this.messages = messages.map((message) => {
         const m = message as DisplayMessage;
         const messageView = m.messageView || [];
         const topicMessage = m.topicMessage || [];
@@ -145,12 +135,27 @@ export class MessagesComponent implements OnInit {
       this.batchMessageView();
     });
   }
-
   messagesLoaded: BehaviorSubject<boolean> = new BehaviorSubject(false);
-  filterUser: string = "";
-  filterText: string = "";
-  hasFilters: boolean = false;
-  displaymessages = [] as DisplayMessage[];
+
+  trackByFn(index: number, item: DisplayMessage) {
+    return item.id;
+  }
+  trackByFnMedium(index: number, item: Medium) {
+    return item.id;
+  }
+  trackByFnUser(index: number, item: User) {
+    return item.id;
+  }
+  trackByFnTopic(index: number, item: Topic) {
+    return item.id;
+  }
+  trackByFnTopicMessage(index: number, item: TopicMessage) {
+    return item.topicID + item.messageID;
+  }
+  trackByFnMessageView(index: number, item: MessageView) {
+    return item.userID + item.messageID;
+  }
+
   openMyEntityView() {
     const modalRef = this.modalService.open(MyEntityViewComponent, { size: 'lg' });
     const inst = (modalRef.componentInstance as MyEntityViewComponent)
@@ -166,15 +171,15 @@ export class MessagesComponent implements OnInit {
     });
   }
 
-  setFilterUser(filterUser: string) {
-    this.filterUser = filterUser;
-    this.triggerFetch();
-  }
+  // setFilterUser(filterUser: string) {
+  //   this.filterUser = filterUser;
+  //   this.triggerFetch();
+  // }
 
-  setFilterText(filterText: string) {
-    this.filterText = filterText;
-    this.triggerFetch();
-  }
+  // setFilterText(filterText: string) {
+  //   this.filterText = filterText;
+  //   this.triggerFetch();
+  // }
 
   inspect = async () => {
     alert("Open dev tools console tab to view inspector output.");
@@ -213,7 +218,7 @@ export class MessagesComponent implements OnInit {
 
   editMessage(messageId: string) {
     console.log("Edit message", messageId);
-    const message = this.allMessages?.find((message) => message.id === messageId);
+    const message = this.messages?.find((message) => message.id === messageId);
     if (!message) {
       console.error("Message not found", messageId);
       return;
@@ -242,7 +247,7 @@ export class MessagesComponent implements OnInit {
 
   triggerPagination(page: number) {
     this.page = page;
-    this.startRecord = page === 1 ? null : this.displaymessages[this.displaymessages.length - 1];
+    this.startRecord = page === 1 ? null : this.messages[this.messages.length - 1];
     console.log("triggerPagination", this.page, this.startRecord);
     this.triggerFetch();
   }
@@ -263,118 +268,6 @@ export class MessagesComponent implements OnInit {
     };
   }
 
-  newMessage = "";
-  createMessage() {
-    repo.message?.create(this.messageShape(this.mediums![0].id, this.userID || "", this.newMessage))
-    .then(() => {
-      console.log('Message created');
-      this.newMessage = "";
-    })
-    .catch((error) => {
-      console.error('Error creating message:', error);
-    });
-  }
-
-  /**
-   * Posts this message to your timeline.
-   * NOTE: A Repost will either use the Message ID in the new Parent ID field, or the Parent ID (if it was set) of the original message.
-   * @param messageId
-   */
-  repostMessage(messageID: string) {
-    const message = this.allMessages?.find((message) => message.id === messageID);
-    if (!message) {
-      console.error("Message not found", messageID);
-      return;
-    }
-    const currentUserIsOwner = this.userID === message.senderID;
-    // const newParentID = message.parentID || message.id;
-    // console.log("Repost message", newParentID);
-    // repo.message?.create(this.messageShape(this.mediums![0].id, this.userID || "", "Repost: " + newParentID))
-    // .then(() => {
-    //   console.log('Message created');
-    //   this.newMessage = "";
-    // })
-    // .catch((error) => {
-    //   console.error('Error creating message:', error);
-    // });
-  }
-
-  likeMessage(messageID: string) {
-    const message = this.allMessages?.find((message) => message.id === messageID);
-    if (!message) {
-      console.error("Message not found", messageID);
-      return;
-    }
-    repo.messageView?.update({
-      userID: this.userID,
-      messageID,
-      like: true,// TODO: implement toggle
-      likeTimestamp: new Date().getTime(),
-    })
-    .then(() => {
-      console.log('Message Liked');
-    })
-    .catch((error) => {
-      console.error('Error Liking message:', error);
-    });
-  }
-
-  replyMessage(messageID: string) {
-    const message = this.allMessages?.find((message) => message.id === messageID);
-    if (!message) {
-      console.error("Message not found", messageID);
-      return;
-    }
-    const currentUserIsOwner = this.userID === message.senderID;
-    // const newParentID = message.parentID || message.id;
-    // console.log("Repost message", newParentID);
-    // repo.message?.create(this.messageShape(this.mediums![0].id, this.userID || "", "Repost: " + newParentID))
-    // .then(() => {
-    //   console.log('Message created');
-    //   this.newMessage = "";
-    // })
-    // .catch((error) => {
-    //   console.error('Error creating message:', error);
-    // });
-  }
-
-  bookmarkMessage(messageID: string) {
-    const message = this.allMessages?.find((message) => message.id === messageID);
-    if (!message) {
-      console.error("Message not found", messageID);
-      return;
-    }
-    repo.messageView?.update({
-      userID: this.userID,
-      messageID,
-      bookmark: true,
-      bookmarkTimestamp: new Date().getTime(),
-    })
-    .then(() => {
-      console.log('Message Bookmarked');
-    })
-    .catch((error) => {
-      console.error('Error Bookmarking message:', error);
-    });
-  }
-
-  isBookmarked(messageID: string) {
-    const message = this.displaymessages?.find((message) => message.id === messageID);
-    if (!message) {
-      // console.error("Message not found", messageID);
-      return false;
-    }
-    const messageView = message.messageView.find((view) => view.userID === this.userID);
-    if (!messageView) {
-      // console.error("MessageView not found", messageID);
-      return false;
-    }
-    return messageView.bookmark;
-  }
-
-  shareMessage(messageID: string) {
-    console.log("Share message", messageID);
-  }
 
   /**
    * Upsert "View" Timestamps for set of messages
@@ -385,7 +278,7 @@ export class MessagesComponent implements OnInit {
     console.log('User ID:', this.userID);
     if(this.userID === 'anon') return;
     repo.messageView?.batchUpsert(
-      this.displaymessages
+      this.messages
       .filter((message) => message.messageView.every(mv => mv.userID !== this.userID))
       .map((message) => {
         return {
@@ -405,22 +298,117 @@ export class MessagesComponent implements OnInit {
     );
   }
 
-  trackByFn(index: number, item: DisplayMessage) {
-    return item.id;
+
+  newMessage = "";
+  createMessage() {
+    repo.message?.create(this.messageShape(this.mediums![0].id, this.userID || "", this.newMessage))
+    .then(() => {
+      console.log('Message created');
+      this.newMessage = "";
+    })
+    .catch((error) => {
+      console.error('Error creating message:', error);
+    });
   }
-  trackByFnMedium(index: number, item: Medium) {
-    return item.id;
+
+  /**
+   * Posts this message to your timeline.
+   * NOTE: A Repost will either use the Message ID in the new Parent ID field, or the Parent ID (if it was set) of the original message.
+   * @param messageId
+   */
+  repostMessage(messageID: string) {
+    const message = this.messages?.find((message) => message.id === messageID);
+    if (!message) {
+      console.error("Message not found", messageID);
+      return;
+    }
+    const currentUserIsOwner = this.userID === message.senderID;
+    // const newParentID = message.parentID || message.id;
+    // console.log("Repost message", newParentID);
+    // repo.message?.create(this.messageShape(this.mediums![0].id, this.userID || "", "Repost: " + newParentID))
+    // .then(() => {
+    //   console.log('Message created');
+    //   this.newMessage = "";
+    // })
+    // .catch((error) => {
+    //   console.error('Error creating message:', error);
+    // });
   }
-  trackByFnUser(index: number, item: User) {
-    return item.id;
+
+  likeMessage(messageID: string) {
+    const message = this.messages?.find((message) => message.id === messageID);
+    if (!message) {
+      console.error("Message not found", messageID);
+      return;
+    }
+    repo.messageView?.update({
+      userID: this.userID,
+      messageID,
+      like: true,// TODO: implement toggle
+      likeTimestamp: new Date().getTime(),
+    })
+    .then(() => {
+      console.log('Message Liked');
+    })
+    .catch((error) => {
+      console.error('Error Liking message:', error);
+    });
   }
-  trackByFnTopic(index: number, item: Topic) {
-    return item.id;
+
+  replyMessage(messageID: string) {
+    const message = this.messages?.find((message) => message.id === messageID);
+    if (!message) {
+      console.error("Message not found", messageID);
+      return;
+    }
+    const currentUserIsOwner = this.userID === message.senderID;
+    // const newParentID = message.parentID || message.id;
+    // console.log("Repost message", newParentID);
+    // repo.message?.create(this.messageShape(this.mediums![0].id, this.userID || "", "Repost: " + newParentID))
+    // .then(() => {
+    //   console.log('Message created');
+    //   this.newMessage = "";
+    // })
+    // .catch((error) => {
+    //   console.error('Error creating message:', error);
+    // });
   }
-  trackByFnTopicMessage(index: number, item: TopicMessage) {
-    return item.topicID + item.messageID;
+
+  bookmarkMessage(messageID: string) {
+    const message = this.messages?.find((message) => message.id === messageID);
+    if (!message) {
+      console.error("Message not found", messageID);
+      return;
+    }
+    repo.messageView?.update({
+      userID: this.userID,
+      messageID,
+      bookmark: true,
+      bookmarkTimestamp: new Date().getTime(),
+    })
+    .then(() => {
+      console.log('Message Bookmarked');
+    })
+    .catch((error) => {
+      console.error('Error Bookmarking message:', error);
+    });
   }
-  trackByFnMessageView(index: number, item: MessageView) {
-    return item.userID + item.messageID;
+
+  isBookmarked(messageID: string) {
+    const message = this.messages?.find((message) => message.id === messageID);
+    if (!message) {
+      // console.error("Message not found", messageID);
+      return false;
+    }
+    const messageView = message.messageView.find((view) => view.userID === this.userID);
+    if (!messageView) {
+      // console.error("MessageView not found", messageID);
+      return false;
+    }
+    return messageView.bookmark;
+  }
+
+  shareMessage(messageID: string) {
+    console.log("Share message", messageID);
   }
 }
