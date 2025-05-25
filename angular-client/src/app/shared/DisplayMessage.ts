@@ -1,3 +1,4 @@
+import { randID } from "../util/rand";
 import { Medium, Message, MessageView, Topic, TopicMessage, User } from "../util/schema"
 
 export interface TopicMessageWithTopic extends TopicMessage {
@@ -14,4 +15,20 @@ export interface DisplayMessage extends Message {
   messageReplyCount?: number,
   messageRepostCount?: number,
   messageLikeCount?: number,
+}
+
+export function messageShape(
+  mediumID: string,
+  senderID: string,
+  body: string,
+): Message {
+  const id = randID();
+  const timestamp = new Date().getTime();
+  return {
+    id,
+    senderID,
+    mediumID,
+    body,
+    timestamp,
+  };
 }

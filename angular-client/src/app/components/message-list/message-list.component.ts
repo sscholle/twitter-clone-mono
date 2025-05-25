@@ -78,7 +78,7 @@ export class MessageList implements OnInit, AfterViewInit, OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if( changes['queryConfig']) {
+    if( changes['queryConfig'], changes['queryConfig'].currentValue) {
       console.log('Query Config Changed:', changes['queryConfig'].currentValue);
       // If queryConfig has changed, we need to re-fetch the messages
       this.triggerFetch();
@@ -252,22 +252,6 @@ export class MessageList implements OnInit, AfterViewInit, OnChanges {
     this.triggerFetch();
   }
 
-  messageShape(
-    mediumID: string,
-    senderID: string,
-    body: string,
-  ): Message {
-    const id = randID();
-    const timestamp = new Date().getTime();
-    return {
-      id,
-      senderID,
-      mediumID,
-      body,
-      timestamp,
-    };
-  }
-
 
   /**
    * Upsert "View" Timestamps for set of messages
@@ -298,18 +282,6 @@ export class MessageList implements OnInit, AfterViewInit, OnChanges {
     );
   }
 
-
-  newMessage = "";
-  createMessage() {
-    repo.message?.create(this.messageShape(this.mediums![0].id, this.userID || "", this.newMessage))
-    .then(() => {
-      console.log('Message created');
-      this.newMessage = "";
-    })
-    .catch((error) => {
-      console.error('Error creating message:', error);
-    });
-  }
 
   /**
    * Posts this message to your timeline.

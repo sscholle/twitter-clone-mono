@@ -1,0 +1,14 @@
+      <div class="card bg-glass text-white shadow">
+        <div class="card-body">
+          <h5 class="card-title">Who to Follow</h5>
+          <ul class="list-group list-group-flush">
+            <li *ngFor="let user of users" class="list-group-item bg-transparent text-white d-flex justify-content-between align-items-center">
+              <span>{{ user.name }}</span>
+              <button *ngIf="canFollowUser(user.id);else unFollowUserButton" class="btn btn-sm btn-outline-light" (click)="followUser(user.id)">Follow</button>
+							<ng-template #unFollowUserButton>
+								<button *ngIf="user.id !== userID" class="btn btn-sm btn-text" (click)="unFollowUser(user.id)" placement="bottom" [ngbTooltip]="'Unfollow ' + user.name" container="body"><i class="bi bi-x-circle"></i></button>
+							</ng-template>
+            </li>
+          </ul>
+        </div>
+      </div>

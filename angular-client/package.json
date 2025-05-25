@@ -6,8 +6,10 @@
     "start": "ng serve",
     "build": "node -r dotenv/config && ng build",
     "watch": "ng build --watch --configuration development",
+    "watch:prod": "ng build --watch --configuration production",
     "test": "ng test",
-    "serve:build": "ng serve --configuration=production"
+    "serve:dev": "ng serve --configuration=develpment",
+    "serve:prod": "ng serve --configuration=production"
   },
   "private": true,
   "dependencies": {

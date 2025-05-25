@@ -7,15 +7,17 @@ import { CommonModule } from '@angular/common';
 import { ZeroService } from 'zero-angular';
 import { MessageItemDirective, MessageList } from '../components/message-list/message-list.component';
 import { NgbModal, NgbPaginationModule, NgbTooltipModule } from '@ng-bootstrap/ng-bootstrap';
-import { DisplayMessage } from '../shared/DisplayMessage';
+import { DisplayMessage, messageShape } from '../shared/DisplayMessage';
 import { QueryConfig } from '../util/ZeroRepository';
+import { WhoToFollowComponent } from '../messages/who-to-follow/who-to-follow.component';
+import { NewMessageComponent } from "../components/new-message/new-message.component";
 
 interface FollowerUser extends Follower {
   user: User
 }
 @Component({
   selector: 'components-home',
-  imports: [CommonModule, RouterModule, CardComponent, MessageList, NgbPaginationModule, MessageItemDirective, NgbTooltipModule],
+  imports: [CommonModule, RouterModule, CardComponent, MessageList, NgbPaginationModule, MessageItemDirective, NgbTooltipModule, WhoToFollowComponent, NewMessageComponent],
   templateUrl: './home.component.html',
   styleUrl: './home.component.scss'
 })
@@ -52,11 +54,11 @@ export class HomeComponent {
       //   console.log('Users:', users);
       //   this.users = users as User[];
       // });
-      // repo.medium?.find()
-      // .then((mediums) => {
-      //   console.log('Mediums:', mediums);
-      //   this.mediums = mediums as Medium[];
-      // });
+      repo.medium?.find()
+      .then((mediums) => {
+        console.log('Mediums:', mediums);
+        this.mediums = mediums as Medium[];
+      });
       // repo.message?.findSubscribe()
       // .subscribe((messages) => {
       //   console.log('Messages:', messages);
@@ -202,6 +204,14 @@ export class HomeComponent {
     return item.userID + item.messageID;
   }
 
-  newMessage = "";
+  createMessage(messageBody: string) {
+    repo.message?.create(messageShape(this.mediums![0].id, this.userID || "", messageBody))
+    .then(() => {
+      console.log('Message created');
+    })
+    .catch((error) => {
+      console.error('Error creating message:', error);
+    });
+  }
 
 }

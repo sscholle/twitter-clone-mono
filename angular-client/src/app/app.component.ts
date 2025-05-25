@@ -6,13 +6,12 @@ import { Follower, Medium, Message, MessageView, Schema, Topic, User } from './u
 import { SidebarComponent } from "./components/sidebar/sidebar.component";
 import { ThemeService } from './services/theme.service';
 import { CommonModule } from '@angular/common';
-import { MessagesComponent } from "./messages/messages.component";
 import { ZeroService } from 'zero-angular';
 import Cookies from "js-cookie";
 
 @Component({
   selector: 'app-root',
-  imports: [RouterModule, SidebarComponent, CommonModule, MessagesComponent],
+  imports: [RouterModule, SidebarComponent, CommonModule],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })
