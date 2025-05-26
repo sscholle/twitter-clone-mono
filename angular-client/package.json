@@ -8,7 +8,7 @@
     "watch": "ng build --watch --configuration development",
     "watch:prod": "ng build --watch --configuration production",
     "test": "ng test",
-    "serve:dev": "ng serve --configuration=develpment",
+    "serve:dev": "ng serve --configuration=development",
     "serve:prod": "ng serve --configuration=production"
   },
   "private": true,

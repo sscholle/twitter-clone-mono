@@ -6,6 +6,9 @@ import { NgbDropdownModule, NgbPaginationModule, NgbTooltipModule } from '@ng-bo
 import { ZeroService } from 'zero-angular';
 import { allRepositories as repo } from '../shared/allRepos';
 import { auditTime, throttleTime } from 'rxjs';
+import { MessageList } from '../components/message-list/message-list.component';
+import { query } from '@angular/animations';
+import { QueryConfig } from '../util/ZeroRepository';
 
 interface TopicMessageWithTopic extends TopicMessage {
   topic: Topic
@@ -24,7 +27,7 @@ interface DisplayMessage extends Message {
 }
 @Component({
   selector: 'app-bookmarks',
-  imports: [CommonModule, FormsModule, NgbPaginationModule, NgbDropdownModule, NgbTooltipModule],
+  imports: [CommonModule, FormsModule, NgbPaginationModule, NgbDropdownModule, NgbTooltipModule, MessageList],
   templateUrl: './bookmarks.component.html',
   styleUrl: './bookmarks.component.scss'
 })
@@ -56,7 +59,7 @@ export class BookmarksComponent implements OnInit {
     .pipe(throttleTime(100))
     .subscribe((messages) => {
       console.log('All Bookmarks:', messages);
-      // this.allMessages = messages as MessageViewWithUser[];
+      this.allMessages = messages as MessageViewWithUser[];
     });
     this.triggerFetch();
   }
@@ -64,10 +67,28 @@ export class BookmarksComponent implements OnInit {
   filterUser: string = "";
   filterText: string = "";
   hasFilters: boolean = false;
-  displaymessages:DisplayMessage[] = [];
-  allMessages: DisplayMessage[] = [];
+  allMessages: MessageViewWithUser[] = [];
+  queryConfig: QueryConfig<Schema, Message> | undefined = undefined;
+  displayMessages: DisplayMessage[] = [];
   triggerFetch(){
-    this.hasFilters = !!(this.filterUser || this.filterText);
+    // this.queryConfig =
+    //   {
+    //     queryParams: {
+    //       "userID": this.userID,
+    //       "bookmark": ['IS', true],
+    //     },
+    //     relations: [
+    //       {
+    //         table: "message",
+    //         cb: (q) => q.related("messageView" as never).related("sender" as never),
+    //       },
+    //       {
+    //         table: "user",
+    //         cb: (q) => q,
+    //       }
+    //     ],
+    //     orderBy: { "timestamp": "desc" },
+    //   }
     repo.messageView?.findSubscribe(
       {
         "userID": this.userID,
@@ -86,19 +107,25 @@ export class BookmarksComponent implements OnInit {
       { "timestamp": "desc" },
       this.pageSize,
       this.startRecord || undefined,
+      // this.startRecord ? { "timestamp": ["<", this.startRecord.timestamp] } : undefined
+
     )
-    .pipe(auditTime(100))
+    .pipe(throttleTime(100))
     .subscribe((messageViews) => {
-      console.log('messageViews:', messageViews);
-      const messages = messageViews.map((messageViews) => {
-        const mv = messageViews as MessageViewWithUser;
-        const m = mv.message;
-        return m;
-      });
-      this.displaymessages = messages as DisplayMessage[];
-      // @TODO: consolidate how all the Entities are queried via Services - and use more Granular Components for Display
-      this.changeDetectorRef.detectChanges();
-    })
+      this.displayMessages = this.dataMap(messageViews as MessageViewWithUser[]);
+      console.log('Current Bookmarks:', this.displayMessages);
+    });
+  }
+
+  dataMap(res: MessageView[]): DisplayMessage[] {
+    return res.map((messageView) => {
+      const mv = messageView as MessageViewWithUser;
+      const m = mv.message as DisplayMessage;
+      // m.sender = mv.sender as User;
+      // m.medium = mv.medium as Medium;
+      m.messageView = [mv];
+      return m;
+    });
   }
 
   // PAGING
@@ -109,7 +136,7 @@ export class BookmarksComponent implements OnInit {
 
   triggerPagination(page: number) {
     this.page = page;
-    this.startRecord = page === 1 ? null : this.displaymessages[this.displaymessages.length - 1];
+    this.startRecord = page === 1 ? null : this.displayMessages[this.displayMessages.length - 1];
     console.log("triggerPagination", this.page, this.startRecord);
     this.triggerFetch();
   }

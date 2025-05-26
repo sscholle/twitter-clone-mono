@@ -13,6 +13,10 @@ import { WhoToFollowComponent } from './who-to-follow/who-to-follow.component';
 interface FollowerUser extends Follower {
   user: User
 }
+
+/**
+ * Shows messages with filters by Topic, User, and Text.
+ */
 @Component({
   selector: 'tc-messages',
   imports: [CommonModule, RouterModule, CardComponent, MessageList, NgbPaginationModule, MessageItemDirective, NgbTooltipModule, WhoToFollowComponent],

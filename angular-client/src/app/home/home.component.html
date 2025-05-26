@@ -20,35 +20,8 @@
 			<!-- New Message & -->
 			 <app-new-message (onMessageCreate)="createMessage($event)"></app-new-message>
       <!-- Messages -->
-			 <!-- <components-messages></components-messages> -->
 				<tc-message-list [queryConfig]="queryConfig">
-				<!-- <tc-message-list [messages]="displaymessages" [loading]="loading" (loadMore)="loadMoreMessages()"> -->
-					<!-- <tc-new-message (messageCreated)="loadMessages()"></tc-new-message>
-					<ng-container *ngFor="let message of displaymessages; trackBy: trackByFn">
-						<tc-message-item [message]="message" (editMessage)="editMessage(message.id)"></tc-message-item>
-					</ng-container> -->
 					<ng-template [tcMessageItem] let-id="id" let-messageReplyCount="messageReplyCount" let-messageRepostCount="messageRepostCount" let-messageLikeCount="messageLikeCount" let-messageViewCount="messageViewCount">
-						<!-- <tc-message-item [message]="message" (editMessage)="editMessage(message.id)"></tc-message-item> -->
-						<!-- <button class="btn btn-sm btn-text col py-1 m-0" (click)="replyMessage(id)" [disabled]="true" placement="bottom" ngbTooltip="Reply" container="body">
-							<i class="bi bi-chat"></i> {{ messageReplyCount }}
-						</button>
-						<button class="btn btn-sm btn-text col py-1 m-0" (click)="repostMessage(id)" [disabled]="true" placement="bottom" ngbTooltip="Repost" container="body">
-							<i class="bi bi-recycle"></i> {{ messageRepostCount }}
-						</button>
-						<button class="btn btn-sm btn-text col py-1 m-0" (click)="likeMessage(id)" placement="bottom" ngbTooltip="Like" container="body">
-							<i class="bi bi-hand-thumbs-up"></i> {{ messageLikeCount}}
-						</button>
-						<button class="btn btn-sm btn-text col py-1 m-0">
-							<i class="bi bi-graph-up" placement="bottom" ngbTooltip="Views" container="body"></i> {{ messageViewCount }}
-						</button>
-						<div class="action-group col">
-							<button class="btn btn-text text-tertiary btn-sm" placement="bottom" ngbTooltip="Bookmark" container="body" (click)="bookmarkMessage(id)">
-								<i class="bi" [ngClass]="{'bi-bookmark': !isBookmarked(id), 'bi-bookmark-fill': isBookmarked(id)}"></i>
-							</button>
-							<button class="btn btn-text text-tertiary btn-sm" placement="bottom" ngbTooltip="Share" container="body" [disabled]="true" (click)="shareMessage(id)">
-								<i class="bi bi-share"></i>
-							</button>
-						</div> -->
 					</ng-template>
 				</tc-message-list>
 

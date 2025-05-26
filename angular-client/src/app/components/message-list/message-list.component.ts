@@ -32,8 +32,10 @@ export class MessageItemDirective{
 })
 export class MessageList implements OnInit, AfterViewInit, OnChanges {
   @Input() queryConfig: QueryConfig<Schema, Message> | undefined = undefined;
+  @Input() dataMap: (res: any[]) => DisplayMessage[] = (res: any[]) => res as DisplayMessage[];
+  @Input() messages: DisplayMessage[] = [];
   // @Input() messageQuery: Observable<DisplayMessage[]> | null = null;
-  messages: DisplayMessage[] = [];
+  // messages: DisplayMessage[] = [];
 
 
   ngAfterViewInit(): void {
@@ -63,22 +65,18 @@ export class MessageList implements OnInit, AfterViewInit, OnChanges {
     });
     if (!this.queryConfig) {
       console.warn('No messageQuery provided, using default query');
-      // this.messageQuery = this.zeroService.getZero().query<DisplayMessage>(schema.tables.message, {
-      //   where: {
-      //     userID: this.userID,
-      //   },
-      //   orderBy: [['timestamp', 'desc']],
-      // }).pipe(
-      //   // map((messages) => messages as DisplayMessage[]),
-      //   // filter((messages) => messages.length > 0),
-      // );
-    }else {
+      if(!this.messages) {
+        console.warn('No messageQuery provided, using default query');
+      }
+      console.log('Messages:', this.messages);
+    } else {
+
       this.triggerFetch();
     }
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if( changes['queryConfig'], changes['queryConfig'].currentValue) {
+    if( changes['queryConfig'] && changes['queryConfig'].currentValue) {
       console.log('Query Config Changed:', changes['queryConfig'].currentValue);
       // If queryConfig has changed, we need to re-fetch the messages
       this.triggerFetch();
@@ -98,24 +96,29 @@ export class MessageList implements OnInit, AfterViewInit, OnChanges {
     .subscribe((messages) => {
       console.log('Messages:', messages);
       // this.displaymessages = messages as DisplayMessage[];
-      this.messages = messages.map((message) => {
-        const m = message as DisplayMessage;
-        const messageView = m.messageView || [];
-        const topicMessage = m.topicMessage || [];
-        const topicMessageCount = topicMessage.length;
-        const messageViewCount = messageView.length;
-        const messageLikeCount = messageView.filter((view) => view.like).length;
-        const messageReplyCount = 0; // TODO: implement reply count
-        const messageRepostCount = 0; // TODO: implement repost count
-        return {
-          ...m,
-          topicMessageCount,
-          messageViewCount,
-          messageReplyCount,
-          messageRepostCount,
-          messageLikeCount,
-        };
-      });
+      if(this.dataMap) {
+        this.messages = this.dataMap(messages);
+      } else {
+        this.messages = messages.map((message) => {
+          const m = message as DisplayMessage;
+          const messageView = m.messageView || [];
+          const topicMessage = m.topicMessage || [];
+          const topicMessageCount = topicMessage.length;
+          const messageViewCount = messageView.length;
+          const messageLikeCount = messageView.filter((view) => view.like).length;
+          const messageReplyCount = 0; // TODO: implement reply count
+          const messageRepostCount = 0; // TODO: implement repost count
+          return {
+            ...m,
+            topicMessageCount,
+            messageViewCount,
+            messageReplyCount,
+            messageRepostCount,
+            messageLikeCount,
+          };
+        });
+      }
+
       // @TODO: Notify Angular that the data has changed
       this.changeDetectorRef.detectChanges();
       // setTimeout(() => {
