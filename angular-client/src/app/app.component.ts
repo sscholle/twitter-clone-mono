@@ -1,4 +1,4 @@
-import { Component, OnInit, Renderer2 } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { allRepositories as repo } from './shared/allRepos';
 import { ZeroRepository } from './util/ZeroRepository';
@@ -18,6 +18,7 @@ import Cookies from "js-cookie";
 export class AppComponent implements OnInit {
   title = 'ng-xstate-entity-view-state';
 
+  // TODO: Use a service to handle repositories
   constructor(private zeroService: ZeroService<Schema>) {
     // Init Repos
     repo.medium = new ZeroRepository<Schema, Medium>(
@@ -40,13 +41,8 @@ export class AppComponent implements OnInit {
       'follower',
       ['userID', 'followerID'],
     );
-    // // Init ZeroService
-    // this.zeroService.initZero();
-    // // Init all repos
-    // allRepositories.medium.initRepo(this.zeroService);
-    // allRepositories.message.initRepo(this.zeroService);
-    // allRepositories.user.initRepo(this.zeroService);
   }
+
   user: User | undefined;
   ngOnInit(): void {
     // this.themeService.themeChanges().subscribe(theme => {
@@ -55,40 +51,14 @@ export class AppComponent implements OnInit {
     //   }
     //   this.renderer.addClass(document.body, theme.newValue);
     // // })
-    // repo.message?.find({}, ['users', 'mediums'])
-    // .then((messages) => {
-    //   console.log('Messages:', messages);
-    //   this.tweets = messages as Message[];
-    // });
     repo.user?.findOne(this.userID)
     .then((user) => {
       console.log('User:', user);
       this.user = user as User;
     });
-    repo.user?.find()
-    .then((users) => {
-      console.log('Users:', users);
-      this.users = users as User[];
-    });
-    repo.topic?.findSubscribe()
-    .subscribe((topics) => {
-      console.log('Topics:', topics);
-      this.topics = topics as Topic[];
-    });
-  }
-  tweets: Message[] = [];
-  users: User[] = [];
-  topics: Topic[] = [];
-
-  filterByTopic(topicId: string) {
-    console.log('Filtering by topic:', topicId);
-    // repo.message?.find({ topicID: topicId })
-    // .then((messages) => {
-    //   console.log('Filtered Messages:', messages);
-    //   this.tweets = messages as Message[];
-    // });
   }
 
+  // TODO: Provide an Auth Service to handle login/logout
   async login(evt: Event) {
     evt.preventDefault();
     // just loging with randon user for now

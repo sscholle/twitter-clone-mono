@@ -21,24 +21,9 @@
 			 <app-new-message (onMessageCreate)="createMessage($event)"></app-new-message>
       <!-- Messages -->
 				<tc-message-list [queryConfig]="queryConfig">
-					<ng-template [tcMessageItem] let-id="id" let-messageReplyCount="messageReplyCount" let-messageRepostCount="messageRepostCount" let-messageLikeCount="messageLikeCount" let-messageViewCount="messageViewCount">
-					</ng-template>
+					<!-- <ng-template [tcMessageItem] let-id="id" let-messageReplyCount="messageReplyCount" let-messageRepostCount="messageRepostCount" let-messageLikeCount="messageLikeCount" let-messageViewCount="messageViewCount">
+					</ng-template> -->
 				</tc-message-list>
-
-			<!-- Pagination
-			<div class="btn-toolbar mb-3">
-				<ngb-pagination
-					(pageChange)="triggerPagination($event)"
-					[(page)]="page"
-					[pageSize]="pageSize"
-					[collectionSize]="allMessages?.length || 0"
-					[maxSize]="6"></ngb-pagination>
-				<div class="d-flex flex-grow-1 justify-content-end align-items-center">
-					<em>
-						Showing {{ displaymessages.length }} of {{ allMessages?.length }} messages.
-					</em>
-				</div>
-			</div> -->
     </div>
 
     <!-- Right Sidebar -->

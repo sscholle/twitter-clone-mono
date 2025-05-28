@@ -26,6 +26,11 @@ export class ZeroRepository<S extends Schema, T extends Row<TableSchema>> extend
 
   constructor(
     private collectionName: string,
+    /**
+     * Bridge Tables would have multiple ID fields, e.g. Follower has userID and followerID.
+     * For a single ID field, you can just use ["id"].
+     * For a composite key, you can use ["userID", "followerID"].
+     */
     private idField: string[] = ["id"],
   ) {
     super();
@@ -225,6 +230,17 @@ export class ZeroRepository<S extends Schema, T extends Row<TableSchema>> extend
       );
   }
 
+  /**
+   * Convert query parameters into a Zero Query object.
+   * This method allows you to build a query object that can be used with Zero's query system.
+   * It supports filtering, relations, ordering, limiting, and starting from a specific record.
+   * @param queryParams
+   * @param relations
+   * @param orderBy
+   * @param limit
+   * @param start
+   * @returns
+   */
   generateQueryObject(queryParams: Record<string, ParamValue>, relations?: RelationParam<S>[], orderBy?: Record<string, string>, limit?: number, start?: Partial<T>): Query<S, string> {
     let find = this.baseQuery;
     relations?.forEach((relation) => {
@@ -258,7 +274,7 @@ export class ZeroRepository<S extends Schema, T extends Row<TableSchema>> extend
     return new Promise((resolve) => {
       try {
         this.query.useQuery(
-          this.baseQuery.where(this.idField as any, id as any).one()
+          this.baseQuery.where(this.idField.shift() as any, id as any).one()
         )
           .pipe(
             filter(([result, resultType]) => {

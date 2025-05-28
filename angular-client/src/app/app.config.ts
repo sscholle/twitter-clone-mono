@@ -10,6 +10,7 @@ import Cookies from 'js-cookie';
 import { provideServiceWorker } from '@angular/service-worker';
 import { environment } from '../environments/environment';
 
+// Use cookies to get the JWT and decode it
 const encodedJWT = Cookies.get("jwt");
 const decodedJWT = encodedJWT && decodeJwt(encodedJWT);
 const userID = decodedJWT?.sub ? (decodedJWT.sub as string) : "anon";
@@ -21,9 +22,13 @@ console.log("schema", schema);
 
 export const appConfig: ApplicationConfig = {
   providers: [
+    // Provide Angular's built-in animations
     provideAnimations(),
+    // Enable Zone.js change detection
     provideZoneChangeDetection({ eventCoalescing: true }),
+    // Routes with Animations
     provideRouter(routes, withViewTransitions()),
+    // SYNC: Provide the Zero service with the userID and JWT for authentication
     provideZero(new Zero({
       userID,
       auth: () => encodedJWT,
@@ -31,6 +36,7 @@ export const appConfig: ApplicationConfig = {
       schema,
       kvStore: "idb",
     })),
+    // PWA configuration
     provideServiceWorker('ngsw-worker.js', {
       enabled: !isDevMode(),
       registrationStrategy: 'registerWhenStable:30000'

@@ -4,7 +4,11 @@ import { IWrite } from './interfaces/IWrite';
 import { IRead, RelationParam } from './interfaces/IRead';
 import { Schema } from '@rocicorp/zero';
 
-// that class only can be extended
+/**
+ * BaseRepository class that implements IWrite and IRead interfaces.
+ * This class provides a skeleton for repository operations such as create, update, delete, and find.
+ * It is designed to be extended by specific repositories for different data types.
+ */
 export abstract class BaseRepository<T, S extends Schema> implements IWrite<T>, IRead<T> {
     create(item: T): Promise<boolean> {
         throw new Error("Method not implemented.");

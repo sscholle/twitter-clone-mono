@@ -1,22 +1,21 @@
-import { AfterViewInit, ChangeDetectorRef, Component, contentChild, ContentChild, ContentChildren, Directive, ElementRef, EmbeddedViewRef, EventEmitter, inject, Injector, Input, OnChanges, OnInit, Output, Query, QueryList, SimpleChanges, TemplateRef, ViewChildren } from '@angular/core';
+import { ChangeDetectorRef, Component, ContentChild, Directive, inject, Input, OnChanges, OnInit, SimpleChanges, TemplateRef } from '@angular/core';
 import { Medium, Message, MessageView, schema, Schema, Topic, TopicMessage, User } from '../../util/schema';
 import { CommonModule } from '@angular/common';
 import { NgbDropdownModule, NgbModal, NgbPaginationModule, NgbTooltipModule } from '@ng-bootstrap/ng-bootstrap';
 import { ZeroService } from 'zero-angular';
 import { DisplayMessage } from '../../shared/DisplayMessage';
-import { auditTime, BehaviorSubject, filter, Observable, take } from 'rxjs';
+import { auditTime, BehaviorSubject, filter, take } from 'rxjs';
 import { QueryConfig } from '../../util/ZeroRepository';
 import { allRepositories as repo } from '../../shared/allRepos';
 import { MyEntityViewComponent } from '../../my-entity-view/my-entity-view.component';
 import { EntityViewPermission } from '../../my-entity-view/machine';
-import { randID } from '../../util/rand';
-
+// import { IInfiniteScrollEvent, InfiniteScrollDirective } from 'ngx-infinite-scroll';
 
 @Directive({
   selector: '[tcMessageItem]',
   standalone: true
 })
-export class MessageItemDirective{
+export class MessageItemDirective {
   constructor(public templateRef: TemplateRef<DisplayMessage>) {
   }
   // static ngTemplateContextGuard(dir: MessageItemDirective, ctx: any): ctx is TemplateRef<DisplayMessage> {
@@ -26,66 +25,63 @@ export class MessageItemDirective{
 
 @Component({
   selector: 'tc-message-list',
-  imports: [CommonModule, NgbPaginationModule, NgbDropdownModule, NgbTooltipModule],
+  imports: [CommonModule, NgbPaginationModule, NgbDropdownModule, NgbTooltipModule, MessageItemDirective],
   templateUrl: './message-list.component.html',
   styleUrl: './message-list.component.scss'
 })
-export class MessageList implements OnInit, AfterViewInit, OnChanges {
+export class MessageList implements OnInit, OnChanges {
   @Input() queryConfig: QueryConfig<Schema, Message> | undefined = undefined;
-  @Input() dataMap: (res: any[]) => DisplayMessage[] = (res: any[]) => res as DisplayMessage[];
+  @Input() dataMap: ((res: any[]) => DisplayMessage[]) | undefined = undefined;// = (res: any[]) => res as DisplayMessage[];
   @Input() messages: DisplayMessage[] = [];
-  // @Input() messageQuery: Observable<DisplayMessage[]> | null = null;
-  // messages: DisplayMessage[] = [];
 
-
-  ngAfterViewInit(): void {
-    console.log("messageItemTemplate", this.messageItemTemplate);
-  }
-  // @Output() replyToMessage = new EventEmitter<Message>();
-  // @Output() repostMessage = new EventEmitter<Message>();
-  // @Output() likeMessage = new EventEmitter<Message>();
-  // @Output() bookmarkMessage = new EventEmitter<Message>();
-  // @Output() deleteMessage = new EventEmitter<Message>();
-  // @Output() editMessage = new EventEmitter<Message>();
-  // messageItemTemplate = contentChild.required(MessageItemDirective);
   @ContentChild(MessageItemDirective) messageItemTemplate: MessageItemDirective | null = null;
-  // @ViewChildren('messageItemMedium') messageItemMediums: any;
 
   zeroService = inject(ZeroService<Schema>);
   modalService = inject(NgbModal);
   changeDetectorRef = inject(ChangeDetectorRef);
   userID: string = this.zeroService.getZero().userID;
   mediums: Medium[] | null = null;
-
+  allMessages: Message[] | null = null;
   ngOnInit(): void {
     repo.medium?.find()
-    .then((mediums) => {
-      console.log('Mediums:', mediums);
-      this.mediums = mediums as Medium[];
-    });
+      .then((mediums) => {
+        console.log('Mediums:', mediums);
+        this.mediums = mediums as Medium[];
+      });
+
+
     if (!this.queryConfig) {
       console.warn('No messageQuery provided, using default query');
-      if(!this.messages) {
+      if (!this.messages) {
         console.warn('No messageQuery provided, using default query');
       }
       console.log('Messages:', this.messages);
     } else {
-
       this.triggerFetch();
     }
+
+    repo.message?.findSubscribe(
+      this.queryConfig?.queryParams || {},
+      [],
+      { timestamp: 'desc' },
+    )
+    .subscribe((messages) => {
+      console.log('Messages:', messages);
+      this.allMessages = messages as Message[];
+    });
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if( changes['queryConfig'] && changes['queryConfig'].currentValue) {
+    if (changes['queryConfig'] && changes['queryConfig'].currentValue) {
       console.log('Query Config Changed:', changes['queryConfig'].currentValue);
       // If queryConfig has changed, we need to re-fetch the messages
       this.triggerFetch();
     }
-      // console.log('Query Config Changed:', changes['queryConfig']);
-      // changes.queryConfig && this.triggerFetch();
+    // console.log('Query Config Changed:', changes['queryConfig']);
+    // changes.queryConfig && this.triggerFetch();
   }
 
-  triggerFetch(){
+  triggerFetch() {
     repo.message?.findSubscribe(
       this.queryConfig?.queryParams || {},
       this.queryConfig?.relations || [],
@@ -93,39 +89,40 @@ export class MessageList implements OnInit, AfterViewInit, OnChanges {
       this.pageSize,
       this.startRecord || undefined,
     )
-    .subscribe((messages) => {
-      console.log('Messages:', messages);
-      // this.displaymessages = messages as DisplayMessage[];
-      if(this.dataMap) {
-        this.messages = this.dataMap(messages);
-      } else {
-        this.messages = messages.map((message) => {
-          const m = message as DisplayMessage;
-          const messageView = m.messageView || [];
-          const topicMessage = m.topicMessage || [];
-          const topicMessageCount = topicMessage.length;
-          const messageViewCount = messageView.length;
-          const messageLikeCount = messageView.filter((view) => view.like).length;
-          const messageReplyCount = 0; // TODO: implement reply count
-          const messageRepostCount = 0; // TODO: implement repost count
-          return {
-            ...m,
-            topicMessageCount,
-            messageViewCount,
-            messageReplyCount,
-            messageRepostCount,
-            messageLikeCount,
-          };
-        });
-      }
+      .subscribe((messages) => {
+        console.log('Messages:', messages);
+        // this.displaymessages = messages as DisplayMessage[];
+        if (this.dataMap) {
+          this.messages = this.dataMap(messages);
+        } else {
+          this.messages = messages.map((message) => {
+            const m = message as DisplayMessage;
+            const messageView = m.messageView || [];
+            const topicMessage = m.topicMessage || [];
+            const topicMessageCount = topicMessage.length;
+            const messageViewCount = messageView.length;
+            const messageLikeCount = messageView.filter((view) => view.like).length;
+            const messageReplyCount = 0; // TODO: implement reply count
+            const messageRepostCount = 0; // TODO: implement repost count
+            console.log('Message:', m)
+            return {
+              ...m,
+              topicMessageCount,
+              messageViewCount,
+              messageReplyCount,
+              messageRepostCount,
+              messageLikeCount,
+            };
+          });
+        }
 
-      // @TODO: Notify Angular that the data has changed
-      this.changeDetectorRef.detectChanges();
-      // setTimeout(() => {
-      // this.batchMessageView();
-      // }, 2000);
-      this.messagesLoaded.next(true);
-    })
+        // @TODO: Notify Angular that the data has changed
+        this.changeDetectorRef.detectChanges();
+        // setTimeout(() => {
+        // this.batchMessageView();
+        // }, 2000);
+        this.messagesLoaded.next(true);
+      })
 
     this.messagesLoaded.pipe(
       filter((loaded) => loaded),
@@ -133,10 +130,10 @@ export class MessageList implements OnInit, AfterViewInit, OnChanges {
       auditTime(2000),
       take(1),
     )
-    .subscribe(() => {
-      console.log('Messages Loaded');
-      this.batchMessageView();
-    });
+      .subscribe(() => {
+        console.log('Messages Loaded');
+        this.batchMessageView();
+      });
   }
   messagesLoaded: BehaviorSubject<boolean> = new BehaviorSubject(false);
 
@@ -244,10 +241,14 @@ export class MessageList implements OnInit, AfterViewInit, OnChanges {
 
   // PAGING
   collectionSize = 0;// - Number of elements/items in the collection. i.e. the total number of items the pagination should handle.
-  pageSize = 10;// - Number of elements/items per page.
+  pageSize = 100;// - Number of elements/items per page.
   page = 1;//- The current page.
   startRecord: DisplayMessage | null = null;// - The first record of the current page.
 
+  /**
+   * Note: This is a manual pagination trigger - has issue when pagination backwards (posted on ZeroBug tracker; https://bugs.rocicorp.dev/issue/3880 )
+   * @param page
+   */
   triggerPagination(page: number) {
     this.page = page;
     this.startRecord = page === 1 ? null : this.messages[this.messages.length - 1];
@@ -255,34 +256,33 @@ export class MessageList implements OnInit, AfterViewInit, OnChanges {
     this.triggerFetch();
   }
 
-
   /**
    * Upsert "View" Timestamps for set of messages
    * @TODO: check filtering - must call this manually for now as this could result in infinite loop
    */
-  batchMessageView(){
+  batchMessageView() {
     console.log('Batch Message View');
     console.log('User ID:', this.userID);
-    if(this.userID === 'anon') return;
+    if (this.userID === 'anon') return;
     repo.messageView?.batchUpsert(
       this.messages
-      .filter((message) => message.messageView.every(mv => mv.userID !== this.userID))
-      .map((message) => {
-        return {
-          userID: this.userID,
-          messageID: message.id,
-          timestamp: new Date().getTime(),
-        }
-      })
+        .filter((message) => message.messageView.every(mv => mv.userID !== this.userID))
+        .map((message) => {
+          return {
+            userID: this.userID,
+            messageID: message.id,
+            timestamp: new Date().getTime(),
+          }
+        })
     )
-    .then(() => {
-      console.log('Messages Batch Upserted');
-    }
-    )
-    .catch((error) => {
-      console.error('Error Batch Upserting:', error);
-    }
-    );
+      .then(() => {
+        console.log('Messages Batch Upserted');
+      }
+      )
+      .catch((error) => {
+        console.error('Error Batch Upserting:', error);
+      }
+      );
   }
 
 
@@ -322,12 +322,12 @@ export class MessageList implements OnInit, AfterViewInit, OnChanges {
       like: true,// TODO: implement toggle
       likeTimestamp: new Date().getTime(),
     })
-    .then(() => {
-      console.log('Message Liked');
-    })
-    .catch((error) => {
-      console.error('Error Liking message:', error);
-    });
+      .then(() => {
+        console.log('Message Liked');
+      })
+      .catch((error) => {
+        console.error('Error Liking message:', error);
+      });
   }
 
   replyMessage(messageID: string) {
@@ -361,12 +361,12 @@ export class MessageList implements OnInit, AfterViewInit, OnChanges {
       bookmark: true,
       bookmarkTimestamp: new Date().getTime(),
     })
-    .then(() => {
-      console.log('Message Bookmarked');
-    })
-    .catch((error) => {
-      console.error('Error Bookmarking message:', error);
-    });
+      .then(() => {
+        console.log('Message Bookmarked');
+      })
+      .catch((error) => {
+        console.error('Error Bookmarking message:', error);
+      });
   }
 
   isBookmarked(messageID: string) {
@@ -386,4 +386,49 @@ export class MessageList implements OnInit, AfterViewInit, OnChanges {
   shareMessage(messageID: string) {
     console.log("Share message", messageID);
   }
+
+
+  // INFINITE SCROLL EXPERIMENTAL
+
+  // sum = 10;
+  // throttle = 300;
+  // scrollDistance = 2;
+  // scrollUpDistance = 2;
+  // direction = "";
+  // onScrollDown(ev: IInfiniteScrollEvent) {
+  //   console.log("scrolled down!!", ev);
+
+  //   // add another 20 items
+  //   const start = this.sum;
+  //   this.sum += 20;
+  //   this.appendItems(start, this.sum);
+
+  //   this.direction = "down";
+  // }
+
+  // onUp(ev: IInfiniteScrollEvent) {
+  //   console.log("scrolled up!", ev);
+  //   const start = this.sum;
+  //   this.sum += 20;
+  //   this.prependItems(start, this.sum);
+
+  //   this.direction = "up";
+  // }
+
+  // array = [];
+  // addItems(_startIndex: number, endIndex: number, _method: string) {
+  //   for (let i = 0; i < this.sum; ++i) {
+  //     (this.array as any)[_method]([i, " ", "data"].join(""));
+  //   }
+  // }
+
+  // appendItems(startIndex: number, endIndex: number) {
+  //   this.addItems(startIndex, endIndex, "push");
+  // }
+
+  // prependItems(startIndex: number, endIndex: number) {
+  //   this.addItems(startIndex, endIndex, "unshift");
+  // }
+
+
 }
