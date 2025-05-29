@@ -1,0 +1,33 @@
+
+  <!-- Feed Section -->
+  <div class="row mt-4">
+    <!-- Sidebar -->
+    <div id="topics" class="sidebar col-md-3 mb-3">
+      <div class="card bg-glass text-white shadow">
+        <div class="card-body">
+          <!-- <h5 class="card-title">Trending Topics</h5>
+          <ul class="list-group list-group-flush" *ngIf="topics.length > 0">
+            <li class="list-group-item bg-transparent text-white" *ngFor="let topic of topics">
+							<a href="#" (click)="filterByTopic(topic.id)">#{{ topic.name }}</a>
+						</li>
+          </ul> -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Feed -->
+    <div class="col-md-6">
+			<!-- New Message & -->
+			 <!-- <app-new-message (onMessageCreate)="createMessage($event)"></app-new-message> -->
+      <!-- Messages -->
+				<tc-message-list [queryConfig]="queryConfig">
+					<!-- <ng-template [tcMessageItem] let-id="id" let-messageReplyCount="messageReplyCount" let-messageRepostCount="messageRepostCount" let-messageLikeCount="messageLikeCount" let-messageViewCount="messageViewCount">
+					</ng-template> -->
+				</tc-message-list>
+    </div>
+
+    <!-- Right Sidebar -->
+    <div id="followees" class="col-md-3">
+			<app-who-to-follow></app-who-to-follow>
+    </div>
+  </div>

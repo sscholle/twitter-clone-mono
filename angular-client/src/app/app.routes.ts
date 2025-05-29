@@ -22,10 +22,10 @@ export const routes: Routes = [
         "path": "bookmarks",
         "loadComponent": () => import('./bookmarks/bookmarks.component').then(m => m.BookmarksComponent)
     },
-    // {
-    //     "path": "profile",
-    //     "loadComponent": () => import('./profile/profile.component').then(m => m.ProfileComponent)
-    // },
+    {
+        "path": "profile",
+        "loadComponent": () => import('./profile/profile.component').then(m => m.ProfileComponent)
+    },
     {
         "path": "**",
         "redirectTo": "home"

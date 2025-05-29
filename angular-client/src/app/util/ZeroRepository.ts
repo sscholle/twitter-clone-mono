@@ -274,7 +274,7 @@ export class ZeroRepository<S extends Schema, T extends Row<TableSchema>> extend
     return new Promise((resolve) => {
       try {
         this.query.useQuery(
-          this.baseQuery.where(this.idField.shift() as any, id as any).one()
+          this.baseQuery.where(this.idField[0] as any, id as any).one()
         )
           .pipe(
             filter(([result, resultType]) => {

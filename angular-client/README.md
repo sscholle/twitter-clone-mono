@@ -59,11 +59,10 @@ Refer to Hello-Zero project
   - test how re-useable the Machine is, and how we would handle specific Entity Commands needs
     - if this is simply spawing an child actor or just a new actor or just use gneric api calls for the specific use cases, while the generic use cases are completely re-useable.
 
-
 ### FEATURES
 
 - Home
-  - Followed 
+  - Followed
     - pass in query to Message List
       - where User included in Followed List
 - Explore
@@ -73,3 +72,7 @@ Refer to Hello-Zero project
   - only your bookmarked goodies
 - Profile
   - Your Messages
+
+## UI Features
+
+- Scroll to load more (infinite scroll)

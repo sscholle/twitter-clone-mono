@@ -104,7 +104,7 @@ export class MessageList implements OnInit, OnChanges {
             const messageLikeCount = messageView.filter((view) => view.like).length;
             const messageReplyCount = 0; // TODO: implement reply count
             const messageRepostCount = 0; // TODO: implement repost count
-            console.log('Message:', m)
+            // console.log('Message:', m)
             return {
               ...m,
               topicMessageCount,
