@@ -9,6 +9,7 @@ import { MessageItemDirective, MessageList } from '../components/message-list/me
 import { NgbModal, NgbPaginationModule, NgbTooltipModule } from '@ng-bootstrap/ng-bootstrap';
 import { QueryConfig } from '../util/ZeroRepository';
 import { WhoToFollowComponent } from './who-to-follow/who-to-follow.component';
+import { MessageService } from '../services/message.service';
 
 interface FollowerUser extends Follower {
   user: User
@@ -28,6 +29,7 @@ export class MessagesComponent {
   userID: string = this.zeroService.getZero().userID;// TODO: store this in a service
   modalService = inject(NgbModal);
   changeDetectorRef = inject(ChangeDetectorRef);
+  messageService = inject(MessageService);
   users: User[] = [];
   topics: Topic[] = [];
   mediums: Medium[] | null = null;
@@ -36,42 +38,13 @@ export class MessagesComponent {
   followingUsers: FollowerUser[] = [];
 
   ngOnInit(): void {
-    // this.themeService.themeChanges().subscribe(theme => {
-    //   if (theme.oldValue) {
-    //     this.renderer.removeClass(document.body, theme.oldValue);
-    //   }
-    //   this.renderer.addClass(document.body, theme.newValue);
-    // // })
-    // repo.message?.find({}, ['users', 'mediums'])
-    // .then((messages) => {
-    //   console.log('Messages:', messages);
-    //   this.tweets = messages as Message[];
-    // });
-    repo.user?.find()
-    .then((users) => {
-      console.log('Users:', users);
-      this.users = users as User[];
-    });
-    repo.topic?.findSubscribe()
+    this.messageService.observeTopics()
     .subscribe((topics) => {
       console.log('Topics:', topics);
       this.topics = topics as Topic[];
     });
-    repo.follower?.findSubscribe(
-      {
-        "followerID": this.userID || '',
-      },
-      [{
-        table: "user",
-        cb: (q) => q,
-      }],
-    )
-    .subscribe((followers) => {
-      console.log('Followers:', followers);
-      this.followingUsers = followers as FollowerUser[];
-      // Regenerate the Messages query Config
-      this.triggerFetch();
-    });
+
+    this.triggerFetch();
   }
 
   filterByTopic(topicId: string) {

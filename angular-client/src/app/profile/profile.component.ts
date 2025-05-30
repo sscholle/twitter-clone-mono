@@ -7,6 +7,7 @@ import { QueryConfig } from '../util/ZeroRepository';
 import { MessageList } from '../components/message-list/message-list.component';
 import { NewMessageComponent } from '../components/new-message/new-message.component';
 import { WhoToFollowComponent } from '../messages/who-to-follow/who-to-follow.component';
+import { MessageService } from '../services/message.service';
 
 @Component({
   selector: 'app-profile',
@@ -20,6 +21,7 @@ export class ProfileComponent implements OnInit {
   userID: string = this.zeroService.getZero().userID;// TODO: store this in a service
   modalService = inject(NgbModal);
   changeDetectorRef = inject(ChangeDetectorRef);
+  messageService = inject(MessageService);
   users: User[] = [];
   topics: Topic[] = [];
   mediums: Medium[] | null = null;
@@ -27,38 +29,11 @@ export class ProfileComponent implements OnInit {
   myMessges: Message[] | null = null;
 
   ngOnInit(): void {
-    // Fetch user data
-    // if (this.userID === "anon") {
-    //   console.log("User is anonymous");
-    // } else {
-    //   repo.user?.findOne(this.userID)
-    //   .then((user) => {
-    //     console.log('ProfileComponent: User:', user);
-    //     this.user = user as User;
-    //   });
-    // }
-
-    // // Fetch all users
-    // repo.user?.find()
-    //   .then((users) => {
-    //     console.log('Users:', users);
-    //     this.users = users as User[];
-    //   });
-
-    // // Fetch all topics
-    // repo.topic?.find()
-    //   .then((topics) => {
-    //     console.log('Topics:', topics);
-    //     this.topics = topics as Topic[];
-    //   });
-
-    // // Fetch all mediums
-    // repo.medium?.find()
-    //   .then((mediums) => {
-    //     console.log('Mediums:', mediums);
-    //     this.mediums = mediums as Medium[];
-    //   });
-
+    this.messageService.observeTopics()
+      .subscribe((topics) => {
+        console.log('Topics:', topics);
+        this.topics = topics as Topic[];
+      });
     this.queryConfig = {
       queryParams : { senderID: this.userID },
       relations: [

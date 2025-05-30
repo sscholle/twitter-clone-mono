@@ -1,13 +1,12 @@
 import { Component, OnInit } from '@angular/core';
 import { RouterModule } from '@angular/router';
-import { allRepositories as repo } from './shared/allRepos';
-import { ZeroRepository } from './util/ZeroRepository';
-import { Follower, Medium, Message, MessageView, Schema, Topic, User } from './util/schema';
+import { Schema, User } from './util/schema';
 import { SidebarComponent } from "./components/sidebar/sidebar.component";
 import { ThemeService } from './services/theme.service';
 import { CommonModule } from '@angular/common';
 import { ZeroService } from 'zero-angular';
 import Cookies from "js-cookie";
+import { MessageService } from './services/message.service';
 
 @Component({
   selector: 'app-root',
@@ -16,31 +15,7 @@ import Cookies from "js-cookie";
   styleUrl: './app.component.scss'
 })
 export class AppComponent implements OnInit {
-  title = 'ng-xstate-entity-view-state';
-
-  // TODO: Use a service to handle repositories
-  constructor(private zeroService: ZeroService<Schema>) {
-    // Init Repos
-    repo.medium = new ZeroRepository<Schema, Medium>(
-      'medium',
-    );
-    repo.message = new ZeroRepository<Schema, Message>(
-      'message',
-    );
-    repo.messageView = new ZeroRepository<Schema, MessageView>(
-      'message_view',
-      ['userID', 'messageID'],
-    );
-    repo.user = new ZeroRepository<Schema, User>(
-      'user',
-    );
-    repo.topic = new ZeroRepository<Schema, Topic>(
-      'topic',
-    );
-    repo.follower = new ZeroRepository<Schema, Follower>(
-      'follower',
-      ['userID', 'followerID'],
-    );
+  constructor(private zeroService: ZeroService<Schema>, private messageService: MessageService, private themeService: ThemeService) {
   }
 
   user: User | undefined;
@@ -51,7 +26,7 @@ export class AppComponent implements OnInit {
     //   }
     //   this.renderer.addClass(document.body, theme.newValue);
     // // })
-    repo.user?.findOne(this.userID)
+    this.messageService.getUser(this.userID)
     .then((user) => {
       console.log('User:', user);
       this.user = user as User;

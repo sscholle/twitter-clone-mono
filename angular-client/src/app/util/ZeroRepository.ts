@@ -5,6 +5,19 @@ import { filter, map, Observable } from "rxjs";
 import { inject } from "@angular/core";
 import { RelationParam } from "./interfaces/IRead";
 
+/**
+ * Look at Implementing Custom Error Types in TypeScript for a better way to handle errors.
+ * https://www.typescriptlang.org/docs/handbook/2/classes.html#implementing-custom-error-types-in-typescript
+ */
+// import { ItemNotFoundError } from "./ItemNotFoundError";
+// class ItemNotFoundError extends Error {
+//   constructor(message: string) {
+//     super(message);
+//     this.name = "ItemNotFoundError";
+//     Object.setPrototypeOf(this, ItemNotFoundError.prototype);
+//   }
+// }
+
 type ParamValueType = string | number | boolean | Date | null | undefined;
 type ParamType = ParamValueType | ParamValueType[] | Record<string, ParamValueType> | Record<string, ParamValueType[]>;
 // type SimpleOperator = "=" | "!=" | "<" | "<=" | ">" | ">=" | "in" | "not in" | "like" | "not like" | "contains" | "not contains" | "starts with" | "ends with";
@@ -15,8 +28,8 @@ export interface QueryConfig<S extends Schema, T extends Row<TableSchema>> {
   queryParams: Record<string, ParamValue>;
   relations?: RelationParam<S>[];
   orderBy?: Record<string, string>;
-  limit?: number;
-  start?: Partial<T>
+  pageSize?: number;
+  startRecord?: Partial<T>
 }
 
 export class ZeroRepository<S extends Schema, T extends Row<TableSchema>> extends BaseRepository<T, S> {
@@ -196,40 +209,81 @@ export class ZeroRepository<S extends Schema, T extends Row<TableSchema>> extend
     });
   }
 
-  override find(queryParams: Record<string, ParamValue> = {}, relations?: RelationParam<S>[], orderBy?: Record<string, string>, limit?: number, start?: Partial<T>): Promise<T[]> {
+  override find(
+    queryParams: Record<string, ParamValue> = {},
+    relations?: RelationParam<S>[],
+    orderBy?: Record<string, string>,
+    limit?: number,
+    start?: Partial<T>,
+    resultTypes: string[] = ["unknown", "complete"]
+  ): Promise<T[]> {
     return new Promise((resolve) => {
       try {
         const find = this.generateQueryObject(queryParams, relations, orderBy, limit, start);
         this.query.useQuery(find)
           .pipe(
             filter(([result, resultType]) => {
+              return resultTypes.includes(resultType.type);// resultType.type === "complete";
+            })
+          ).subscribe(([result, resultType]) => {
+            resolve(result as T[]);
+          });
+      }
+      catch (error) {
+        console.error("Error finding item:", error);
+        // resolve(new ItemNotFoundError("Item not found or query failed"));
+        resolve([] as T[]);
+      }
+    });
+  }
+
+  override findOne(id: string): Promise<T> {
+    return new Promise((resolve) => {
+      try {
+        this.query.useQuery(
+          this.baseQuery.where(this.idField[0] as any, id as any).one()
+        )
+          .pipe(
+            filter(([result, resultType]) => {
+              console.log("resultType", resultType);
               return resultType.type === "complete";
             })
           ).subscribe(([result, resultType]) => {
-            const data = result as T[];
+            console.log("result", result);
+            const data = result as unknown as T;
             resolve(data);
           });
       }
       catch (error) {
         console.error("Error finding item:", error);
-        resolve([]);
+        resolve({} as T);
       }
     });
   }
 
-  findSubscribe(queryParams: Record<string, ParamValue> = {}, relations?: RelationParam<S>[], orderBy?: Record<string, string>, limit?: number, start?: Partial<T>): Observable<T[]> {
+  // #region CUSTOM QUERIES
+  findSubscribe(
+    queryParams: Record<string, ParamValue> = {},
+    relations?: RelationParam<S>[],
+    orderBy?: Record<string, string>,
+    limit?: number,
+    start?: Partial<T>,
+    resultTypes: string[] = ["unknown", "complete"]
+  ): Observable<T[]> {
     const find = this.generateQueryObject(queryParams, relations, orderBy, limit, start);
     return this.query.useQuery(find)
       .pipe(
         filter(([result, resultType]) => {
-          return resultType.type === "complete";
+          return resultTypes.includes(resultType.type);// resultType.type === "complete";
         }),
         map(([result, type]) => {
           return result as T[];
         })
       );
   }
+  // #endregion CUSTOM QUERIES
 
+  // #region UTILITY METHODS
   /**
    * Convert query parameters into a Zero Query object.
    * This method allows you to build a query object that can be used with Zero's query system.
@@ -269,28 +323,5 @@ export class ZeroRepository<S extends Schema, T extends Row<TableSchema>> extend
       find = find.start(start)
     return find;
   }
-
-  override findOne(id: string): Promise<T> {
-    return new Promise((resolve) => {
-      try {
-        this.query.useQuery(
-          this.baseQuery.where(this.idField[0] as any, id as any).one()
-        )
-          .pipe(
-            filter(([result, resultType]) => {
-              console.log("resultType", resultType);
-              return resultType.type === "complete";
-            })
-          ).subscribe(([result, resultType]) => {
-            console.log("result", result);
-            const data = result as unknown as T;
-            resolve(data);
-          });
-      }
-      catch (error) {
-        console.error("Error finding item:", error);
-        resolve({} as T);
-      }
-    });
-  }
+  // #endregion UTILITY METHODS
 }

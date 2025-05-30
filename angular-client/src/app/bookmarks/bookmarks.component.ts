@@ -9,6 +9,7 @@ import { auditTime, throttleTime } from 'rxjs';
 import { MessageList } from '../components/message-list/message-list.component';
 import { query } from '@angular/animations';
 import { QueryConfig } from '../util/ZeroRepository';
+import { MessageService } from '../services/message.service';
 
 interface TopicMessageWithTopic extends TopicMessage {
   topic: Topic
@@ -35,16 +36,16 @@ export class BookmarksComponent implements OnInit {
   zeroService = inject(ZeroService<Schema>);
   // zeroQuery = inject(QueryService);
   changeDetectorRef = inject(ChangeDetectorRef);
-
   userID: string = this.zeroService.getZero().userID;// TODO: store this in a service
+  messageService = inject(MessageService);
 
   ngOnInit(): void {
-    repo.messageView?.findSubscribe(
-      {
+    this.messageService.observeMessageViews({
+      "queryParams": {
         "userID": this.userID,
         "bookmark": ['IS', true],
       },
-      [
+      "relations": [
         {
           table: "message",
           cb: (q) => q,
@@ -54,9 +55,10 @@ export class BookmarksComponent implements OnInit {
           cb: (q) => q,
         }
       ],
-      { "timestamp": "desc" },
-    )
-    .pipe(throttleTime(100))
+      "orderBy": { "timestamp": "desc" },
+      "pageSize": this.pageSize,
+      "startRecord": this.startRecord || undefined,
+    })
     .subscribe((messages) => {
       console.log('All Bookmarks:', messages);
       this.allMessages = messages as MessageViewWithUser[];
@@ -71,30 +73,12 @@ export class BookmarksComponent implements OnInit {
   queryConfig: QueryConfig<Schema, Message> | undefined = undefined;
   displayMessages: DisplayMessage[] = [];
   triggerFetch(){
-    // this.queryConfig =
-    //   {
-    //     queryParams: {
-    //       "userID": this.userID,
-    //       "bookmark": ['IS', true],
-    //     },
-    //     relations: [
-    //       {
-    //         table: "message",
-    //         cb: (q) => q.related("messageView" as never).related("sender" as never),
-    //       },
-    //       {
-    //         table: "user",
-    //         cb: (q) => q,
-    //       }
-    //     ],
-    //     orderBy: { "timestamp": "desc" },
-    //   }
-    repo.messageView?.findSubscribe(
-      {
+    this.messageService.observeMessageViews({
+      "queryParams": {
         "userID": this.userID,
         "bookmark": ['IS', true],
       },
-      [
+      "relations": [
         {
           table: "message",
           cb: (q) => q.related("messageView" as never).related("sender" as never),
@@ -104,12 +88,10 @@ export class BookmarksComponent implements OnInit {
           cb: (q) => q,
         }
       ],
-      { "timestamp": "desc" },
-      this.pageSize,
-      this.startRecord || undefined,
-      // this.startRecord ? { "timestamp": ["<", this.startRecord.timestamp] } : undefined
-
-    )
+      "orderBy": { "timestamp": "desc" },
+      "pageSize": this.pageSize,
+      "startRecord": this.startRecord || undefined,
+    })
     .pipe(throttleTime(100))
     .subscribe((messageViews) => {
       this.displayMessages = this.dataMap(messageViews as MessageViewWithUser[]);

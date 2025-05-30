@@ -9,6 +9,7 @@ import { QueryConfig } from '../../util/ZeroRepository';
 import { allRepositories as repo } from '../../shared/allRepos';
 import { MyEntityViewComponent } from '../../my-entity-view/my-entity-view.component';
 import { EntityViewPermission } from '../../my-entity-view/machine';
+import { MessageService } from '../../services/message.service';
 // import { IInfiniteScrollEvent, InfiniteScrollDirective } from 'ngx-infinite-scroll';
 
 @Directive({
@@ -39,16 +40,16 @@ export class MessageList implements OnInit, OnChanges {
   zeroService = inject(ZeroService<Schema>);
   modalService = inject(NgbModal);
   changeDetectorRef = inject(ChangeDetectorRef);
+  messageService = inject(MessageService);
   userID: string = this.zeroService.getZero().userID;
   mediums: Medium[] | null = null;
   allMessages: Message[] | null = null;
   ngOnInit(): void {
-    repo.medium?.find()
+    this.messageService.getMediums()
       .then((mediums) => {
         console.log('Mediums:', mediums);
         this.mediums = mediums as Medium[];
       });
-
 
     if (!this.queryConfig) {
       console.warn('No messageQuery provided, using default query');
@@ -60,12 +61,13 @@ export class MessageList implements OnInit, OnChanges {
       this.triggerFetch();
     }
 
-    repo.message?.findSubscribe(
-      this.queryConfig?.queryParams || {},
-      [],
-      { timestamp: 'desc' },
-    )
-    .subscribe((messages) => {
+    this.messageService.observeMessages(
+      {
+        queryParams: this.queryConfig?.queryParams || {},
+        relations: [],
+        orderBy: this.queryConfig?.orderBy || { timestamp: 'desc' },
+      }
+    ).subscribe((messages) => {
       console.log('Messages:', messages);
       this.allMessages = messages as Message[];
     });
@@ -82,58 +84,53 @@ export class MessageList implements OnInit, OnChanges {
   }
 
   triggerFetch() {
-    repo.message?.findSubscribe(
-      this.queryConfig?.queryParams || {},
-      this.queryConfig?.relations || [],
-      this.queryConfig?.orderBy || { timestamp: 'desc' },
-      this.pageSize,
-      this.startRecord || undefined,
-    )
-      .subscribe((messages) => {
-        console.log('Messages:', messages);
-        // this.displaymessages = messages as DisplayMessage[];
-        if (this.dataMap) {
-          this.messages = this.dataMap(messages);
-        } else {
-          this.messages = messages.map((message) => {
-            const m = message as DisplayMessage;
-            const messageView = m.messageView || [];
-            const topicMessage = m.topicMessage || [];
-            const topicMessageCount = topicMessage.length;
-            const messageViewCount = messageView.length;
-            const messageLikeCount = messageView.filter((view) => view.like).length;
-            const messageReplyCount = 0; // TODO: implement reply count
-            const messageRepostCount = 0; // TODO: implement repost count
-            // console.log('Message:', m)
-            return {
-              ...m,
-              topicMessageCount,
-              messageViewCount,
-              messageReplyCount,
-              messageRepostCount,
-              messageLikeCount,
-            };
-          });
-        }
+    if(!this.queryConfig) {
+      console.warn('No queryConfig provided, cannot fetch messages');
+      return;
+    }
+    this.messageService.observeMessages(this.queryConfig
+    ).subscribe((messages) => {
+      console.log('Messages:', messages);
+      // this.displaymessages = messages as DisplayMessage[];
+      if (this.dataMap) {
+        this.messages = this.dataMap(messages);
+      } else {
+        this.messages = messages.map((message) => {
+          const m = message as DisplayMessage;
+          const messageView = m.messageView || [];
+          const topicMessage = m.topicMessage || [];
+          const topicMessageCount = topicMessage.length;
+          const messageViewCount = messageView.length;
+          const messageLikeCount = messageView.filter((view) => view.like).length;
+          const messageReplyCount = 0; // TODO: implement reply count
+          const messageRepostCount = 0; // TODO: implement repost count
+          // console.log('Message:', m)
+          return {
+            ...m,
+            topicMessageCount,
+            messageViewCount,
+            messageReplyCount,
+            messageRepostCount,
+            messageLikeCount,
+          };
+        });
+      }
 
-        // @TODO: Notify Angular that the data has changed
-        this.changeDetectorRef.detectChanges();
-        // setTimeout(() => {
-        // this.batchMessageView();
-        // }, 2000);
-        this.messagesLoaded.next(true);
-      })
+      // @TODO: Notify Angular that the data has changed
+      this.changeDetectorRef.detectChanges();
+      this.messagesLoaded.next(true);
+    })
 
+    // DELAY Updating Message Views after messages are loaded
     this.messagesLoaded.pipe(
       filter((loaded) => loaded),
-      // throttleTime(2000),
       auditTime(2000),
       take(1),
     )
-      .subscribe(() => {
-        console.log('Messages Loaded');
-        this.batchMessageView();
-      });
+    .subscribe(() => {
+      console.log('Messages Loaded');
+      this.batchMessageView();
+    });
   }
   messagesLoaded: BehaviorSubject<boolean> = new BehaviorSubject(false);
 
@@ -277,12 +274,10 @@ export class MessageList implements OnInit, OnChanges {
     )
       .then(() => {
         console.log('Messages Batch Upserted');
-      }
-      )
+      })
       .catch((error) => {
         console.error('Error Batch Upserting:', error);
-      }
-      );
+      });
   }
 
 

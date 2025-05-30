@@ -11,6 +11,7 @@ import { DisplayMessage, messageShape } from '../shared/DisplayMessage';
 import { QueryConfig } from '../util/ZeroRepository';
 import { WhoToFollowComponent } from '../messages/who-to-follow/who-to-follow.component';
 import { NewMessageComponent } from "../components/new-message/new-message.component";
+import { MessageService } from '../services/message.service';
 
 interface FollowerUser extends Follower {
   user: User
@@ -26,6 +27,7 @@ export class HomeComponent {
   userID: string = this.zeroService.getZero().userID;// TODO: store this in a service
   modalService = inject(NgbModal);
   changeDetectorRef = inject(ChangeDetectorRef);
+  messageService = inject(MessageService);
   users: User[] = [];
   topics: Topic[] = [];
   mediums: Medium[] | null = null;
@@ -34,76 +36,31 @@ export class HomeComponent {
   followingUsers: FollowerUser[] = [];
 
   ngOnInit(): void {
-
-    // lists all followed content - pass query to messages
-    // configure messages to show only followed content
-
-
-      // if(this.userID === "anon") {
-      //   console.log("User is anonymous");
-      // } else {
-      //   console.log(repo.user);
-      //   repo.user?.findOne(this.userID || "")
-      //   .then((user) => {
-      //     console.log('User:', user);
-      //     this.user = user as User;
-      //   });
-      // }
-      // repo.user?.find()
-      // .then((users) => {
-      //   console.log('Users:', users);
-      //   this.users = users as User[];
-      // });
-      repo.medium?.find()
-      .then((mediums) => {
-        console.log('Mediums:', mediums);
-        this.mediums = mediums as Medium[];
-      });
-      // repo.message?.findSubscribe()
-      // .subscribe((messages) => {
-      //   console.log('Messages:', messages);
-      //   this.allMessages = messages as Message[];
-      // });
-      // this.triggerFetch();
-
-
-
-    // this.themeService.themeChanges().subscribe(theme => {
-    //   if (theme.oldValue) {
-    //     this.renderer.removeClass(document.body, theme.oldValue);
-    //   }
-    //   this.renderer.addClass(document.body, theme.newValue);
-    // // })
-    // repo.message?.find({}, ['users', 'mediums'])
-    // .then((messages) => {
-    //   console.log('Messages:', messages);
-    //   this.tweets = messages as Message[];
-    // });
-    repo.user?.find()
-    .then((users) => {
-      console.log('Users:', users);
-      this.users = users as User[];
-    });
-    repo.topic?.findSubscribe()
+    this.messageService.observeTopics()
     .subscribe((topics) => {
       console.log('Topics:', topics);
       this.topics = topics as Topic[];
     });
-    repo.follower?.findSubscribe(
-      {
-        "followerID": this.userID || '',
-      },
-      [{
-        table: "user",
-        cb: (q) => q,
-      }],
-    )
+    this.messageService.getMediums()
+    .then((mediums) => {
+      console.log('Mediums:', mediums);
+      this.mediums = mediums as Medium[];
+    });
+    this.messageService.observeFollowers(this.userID)
     .subscribe((followers) => {
       console.log('Followers:', followers);
       this.followingUsers = followers as FollowerUser[];
       // Regenerate the Messages query Config
       this.triggerFetch();
     });
+
+    // THEME CHANGE HANDLER
+    // this.themeService.themeChanges().subscribe(theme => {
+    //   if (theme.oldValue) {
+    //     this.renderer.removeClass(document.body, theme.oldValue);
+    //   }
+    //   this.renderer.addClass(document.body, theme.newValue);
+    // // })
   }
 
   filterByTopic(topicId: string) {
@@ -118,38 +75,29 @@ export class HomeComponent {
   canFollowUser(userId: string): boolean {
     return this.userID !== userId && this.isNotFollowingUser(userId);
   }
+
   isNotFollowingUser(userId: string): boolean {
     return !this.followingUsers.some((follower) => follower.userID === userId);
   }
 
   followUser(userId: string) {
-    console.log('Following user:', userId);
-    // Implement follow user logic here
-    repo.follower?.create({
-      userID: userId,
-      followerID: this.userID,
-    } as any).then((result) => {
+    this.messageService.followUser(userId, this.userID)
+    .then((result) => {
       console.log('Followed user:', result);
-    }
-    ).catch((error) => {
+    }).catch((error) => {
       console.error('Error following user:', error);
-    }
-    );
+    });
+    console.log('Following user:', userId);
   }
 
   unFollowUser(userId: string) {
-    console.log('Unfollowing user:', userId);
-    // Implement unfollow user logic here
-    repo.follower?.delete({
-      userID: userId,
-      followerID: this.userID,
-    } as any).then((result) => {
+    this.messageService.unFollowUser(userId, this.userID)
+    .then((result) => {
       console.log('Unfollowed user:', result);
-    }
-    ).catch((error) => {
+    }).catch((error) => {
       console.error('Error unfollowing user:', error);
-    }
-    );
+    });
+    console.log('Unfollowing user:', userId);
   }
 
   queryConfig: QueryConfig<Schema, Message> | undefined = undefined;
@@ -183,7 +131,6 @@ export class HomeComponent {
       orderBy: { "timestamp": "desc" },
     }
   }
-
 
   trackByFn(index: number, item: DisplayMessage) {
     return item.id;
