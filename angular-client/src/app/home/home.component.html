@@ -16,7 +16,17 @@
     </div>
 
     <!-- Main Feed -->
-    <div class="col-md-6">
+    <div class="col-md-6" *ngIf="followingUsers">
+			<!-- <h2 class="text-center">Home Feed</h2>
+			<p class="text-center text-muted">Welcome back, {{ userName }}!</p> -->
+
+			<!-- Search Bar -->
+			<!-- <app-search-bar></app-search-bar> -->
+
+			<!-- New Message Button -->
+			<!-- <div class="text-center mb-3">
+				<button class="btn btn-primary" (click)="openNewMessageModal()">New Message</button>
+			</div> -->
 			<!-- New Message & -->
 			 <app-new-message (onMessageCreate)="createMessage($event)"></app-new-message>
       <!-- Messages -->

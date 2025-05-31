@@ -1,8 +1,10 @@
-import { Injectable } from "@angular/core";
+import { inject, Injectable } from "@angular/core";
 import { Schema as RSchema} from "@rocicorp/zero";
 import { Follower, Medium, Message, MessageView, Schema, Topic, User } from "../util/schema";
 import { Observable } from "rxjs";
-import { QueryConfig, ZeroRepository } from "../util/ZeroRepository";
+import { ItemNotFoundError, QueryConfig, ZeroRepository } from "../util/ZeroRepository";
+import { AuthService } from "./auth.service";
+import { RepoService } from "./repo.service";
 
 /**
  * Potential Messages Service
@@ -12,28 +14,19 @@ import { QueryConfig, ZeroRepository } from "../util/ZeroRepository";
   providedIn: 'root'
 })
 export class MessageService<S extends RSchema = Schema> {
-  mediumRepo = new ZeroRepository<S, Medium>(
-    'medium',
-  );
-  messageRepo = new ZeroRepository<S, Message>(
-    'message',
-  );
-  messageViewsRepo = new ZeroRepository<S, MessageView>(
-    'message_view',
-    ['userID', 'messageID'],
-  );
-  userRepo = new ZeroRepository<S, User>(
-    'user',
-  );
-  topicRepo = new ZeroRepository<S, Topic>(
-    'topic',
-  );
-  followerRepo = new ZeroRepository<S, Follower>(
-    'follower',
-    ['userID', 'followerID'],
-  );
-  constructor() {
 
+
+  authService = inject(AuthService); // Assuming you have an AuthService for authentication
+  repoService  = inject(RepoService<S>);
+  topicRepo = this.repoService.topicRepo;
+  userRepo = this.repoService.userRepo;
+  mediumRepo = this.repoService.mediumRepo;
+  messageRepo = this.repoService.messageRepo;
+  followerRepo = this.repoService.followerRepo;
+  messageViewsRepo = this.repoService.messageViewsRepo;
+  constructor() {
+    console.log("MessageService initialized");
+    // You can initialize any other properties or services here if needed
   }
 
   // #region GET MULTIPLE
@@ -46,10 +39,10 @@ export class MessageService<S extends RSchema = Schema> {
       return Promise.resolve([]);
     }
   }
-  getUsers(): Promise<User[]> {
+  getUsers(): Promise<User[] | Error> {
     // return repo.user?.find() || Promise.resolve([]);
     if (this.userRepo) {
-      return this.userRepo.find();
+      return this.userRepo.find<ItemNotFoundError>();// TODO: investigate error handling techniques
     } else {
       console.warn("User repository is not available.");
       return Promise.resolve([]);
@@ -85,15 +78,7 @@ export class MessageService<S extends RSchema = Schema> {
       return Promise.resolve(null);
     }
   }
-  getUser(userID: string): Promise<User | null> {
-    // return repo.user?.findOne(userID) || Promise.resolve(null);
-    if (this.userRepo) {
-      return this.userRepo.findOne(userID);
-    } else {
-      console.warn("User repository is not available.");
-      return Promise.resolve(null);
-    }
-  }
+
   getMessage(messageID: string): Promise<Message | null> {
     // return repo.message?.findOne(messageID) || Promise.resolve(null);
     if (this.messageRepo) {
@@ -115,6 +100,7 @@ export class MessageService<S extends RSchema = Schema> {
       return Promise.resolve([]);
     }
   }
+
   observeMessages(queryConfig: QueryConfig<S, Message>) {
     if (this.messageRepo) {
       return this.messageRepo.findSubscribe(
@@ -156,6 +142,7 @@ export class MessageService<S extends RSchema = Schema> {
 
   observeFollowers(userID: string) {
     if (this.followerRepo) {
+      console.log("Observing followers for userID:", userID);
       return this.followerRepo.findSubscribe(
         {
           "followerID": userID || '',
@@ -224,6 +211,39 @@ export class MessageService<S extends RSchema = Schema> {
       followerID,
     } as any)
   }
+
+  bookmarkMessage(messageID: string, userID: string, flag: boolean): Promise<boolean> {
+    if (!this.messageViewsRepo) {
+      console.warn("MessageViews repository is not available.");
+      return Promise.reject("MessageViews repository is not available.");
+    }
+    return this.messageViewsRepo.update({
+      userID,
+      messageID,
+      bookmark: flag,
+      bookmarkTimestamp: new Date().getTime(),
+    })
+  }
+
+  likeMessage(messageID: string, userID: string, flag: boolean): Promise<boolean> {
+    if (!this.messageViewsRepo) {
+      console.warn("MessageViews repository is not available.");
+      return Promise.reject("MessageViews repository is not available.");
+    }
+    return this.messageViewsRepo.update({
+      userID,
+      messageID,
+      like: flag,
+      likeTimestamp: new Date().getTime(),
+    });
+  }
+  batchMessageView(messageViews: Partial<MessageView>[]){
+    if (!this.messageViewsRepo) {
+      console.warn("MessageViews repository is not available.");
+      return Promise.reject("MessageViews repository is not available.");
+    }
+    return this.messageViewsRepo.batchUpsert(messageViews);
+  }
   // #endregion CREATE/DELETE
 
   formatMessage(message: string): string {
@@ -235,4 +255,56 @@ export class MessageService<S extends RSchema = Schema> {
     // Example filter function
     return messages.filter(msg => msg.includes(keyword));
   }
+
+  // #region MESSAGE LIST QUERY CONFIGS
+  getMessageListQueryConfig(userID: string): QueryConfig<S, Message> {
+    return {
+      queryParams: { senderID: userID },
+      relations: [
+        {
+          table: "medium",
+          cb: (q) => q,
+        },
+        {
+          table: "sender",
+          cb: (q) => q,
+        },
+        {
+          table: "topicMessage",
+          cb: (q) => q.related("topic" as never),
+        },
+        {
+          table: "messageView",
+          cb: (q) => q,
+        }
+      ],
+      orderBy: { "timestamp": "desc" },
+    };
+  }
+  // getHomeMessageQueryConfig(userID: string): QueryConfig<S, Message> {
+  //   return {
+  //     queryParams: {
+  //       senderID: ["IN", this.authService.followingUsers.map(user => userID)],
+  //     },
+  //     relations: [
+  //       {
+  //         table: "medium",
+  //         cb: (q) => q,
+  //       },
+  //       {
+  //         table: "sender",
+  //         cb: (q) => q,
+  //       },
+  //       {
+  //         table: "topicMessage",
+  //         cb: (q) => q.related("topic" as never),
+  //       },
+  //       {
+  //         table: "messageView",
+  //         cb: (q) => q,
+  //       }
+  //     ],
+  //     orderBy: { "timestamp": "desc" },
+  //   };
+  // }
 }

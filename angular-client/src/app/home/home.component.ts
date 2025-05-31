@@ -12,6 +12,8 @@ import { QueryConfig } from '../util/ZeroRepository';
 import { WhoToFollowComponent } from '../messages/who-to-follow/who-to-follow.component';
 import { NewMessageComponent } from "../components/new-message/new-message.component";
 import { MessageService } from '../services/message.service';
+import { AuthService } from '../services/auth.service';
+import { audit, debounceTime, interval, Subject } from 'rxjs';
 
 interface FollowerUser extends Follower {
   user: User
@@ -23,8 +25,7 @@ interface FollowerUser extends Follower {
   styleUrl: './home.component.scss'
 })
 export class HomeComponent {
-  zeroService = inject(ZeroService<Schema>);
-  userID: string = this.zeroService.getZero().userID;// TODO: store this in a service
+  authService = inject(AuthService<Schema>);
   modalService = inject(NgbModal);
   changeDetectorRef = inject(ChangeDetectorRef);
   messageService = inject(MessageService);
@@ -37,22 +38,26 @@ export class HomeComponent {
 
   ngOnInit(): void {
     this.messageService.observeTopics()
+    // .pipe(debounce())
     .subscribe((topics) => {
       console.log('Topics:', topics);
       this.topics = topics as Topic[];
     });
-    this.messageService.getMediums()
-    .then((mediums) => {
-      console.log('Mediums:', mediums);
-      this.mediums = mediums as Medium[];
-    });
-    this.messageService.observeFollowers(this.userID)
-    .subscribe((followers) => {
-      console.log('Followers:', followers);
-      this.followingUsers = followers as FollowerUser[];
-      // Regenerate the Messages query Config
-      this.triggerFetch();
-    });
+    // this.messageService.getMediums()
+    // .then((mediums) => {
+    //   console.log('Mediums:', mediums);
+    //   this.mediums = mediums as Medium[];
+    // });
+    if(this.authService.isLoggedIn() && this.authService.userID) {
+      this.messageService.observeFollowers(this.authService.userID)
+      .subscribe((followers) => {
+        console.log('Followers:', followers);
+        this.followingUsers = followers as FollowerUser[];
+        console.log('Following Users:', this.followingUsers);
+        // Regenerate the Messages query Config
+        this.triggerFetch();
+      });
+    }
 
     // THEME CHANGE HANDLER
     // this.themeService.themeChanges().subscribe(theme => {
@@ -72,8 +77,16 @@ export class HomeComponent {
     // });
   }
 
+  get isLoggedIn() {
+    return this.authService.isLoggedIn();
+  }
+
+  get userName() {
+    return this.authService.user?.name || 'Guest';
+  }
+
   canFollowUser(userId: string): boolean {
-    return this.userID !== userId && this.isNotFollowingUser(userId);
+    return this.authService.userID !== userId && this.isNotFollowingUser(userId);
   }
 
   isNotFollowingUser(userId: string): boolean {
@@ -81,7 +94,7 @@ export class HomeComponent {
   }
 
   followUser(userId: string) {
-    this.messageService.followUser(userId, this.userID)
+    this.messageService.followUser(userId, this.authService.userID || "")
     .then((result) => {
       console.log('Followed user:', result);
     }).catch((error) => {
@@ -91,7 +104,7 @@ export class HomeComponent {
   }
 
   unFollowUser(userId: string) {
-    this.messageService.unFollowUser(userId, this.userID)
+    this.messageService.unFollowUser(userId, this.authService.userID || "")
     .then((result) => {
       console.log('Unfollowed user:', result);
     }).catch((error) => {
@@ -101,7 +114,14 @@ export class HomeComponent {
   }
 
   queryConfig: QueryConfig<Schema, Message> | undefined = undefined;
+  queryConfig$ = new Subject<any>();
   triggerFetch(){
+    if(this.followingUsers.length === 0) {
+      console.warn('No following users found, skipping message fetch.');
+      this.queryConfig = undefined;
+      return;
+    }
+    console.log('Triggering fetch for messages from following users:', this.followingUsers);
     // this.hasFilters = !!(this.filterUser || this.filterText);
     this.queryConfig = {
       queryParams: {
@@ -130,6 +150,7 @@ export class HomeComponent {
       ],
       orderBy: { "timestamp": "desc" },
     }
+    // this.queryConfig$.next(this.queryConfig);
   }
 
   trackByFn(index: number, item: DisplayMessage) {
@@ -152,7 +173,7 @@ export class HomeComponent {
   }
 
   createMessage(messageBody: string) {
-    repo.message?.create(messageShape(this.mediums![0].id, this.userID || "", messageBody))
+    repo.message?.create(messageShape(this.mediums![0].id, this.authService.userID || "", messageBody))
     .then(() => {
       console.log('Message created');
     })

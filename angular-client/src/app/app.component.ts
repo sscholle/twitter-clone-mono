@@ -1,12 +1,12 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { Schema, User } from './util/schema';
 import { SidebarComponent } from "./components/sidebar/sidebar.component";
 import { ThemeService } from './services/theme.service';
 import { CommonModule } from '@angular/common';
 import { ZeroService } from 'zero-angular';
-import Cookies from "js-cookie";
 import { MessageService } from './services/message.service';
+import { AuthService } from './services/auth.service';
 
 @Component({
   selector: 'app-root',
@@ -15,10 +15,12 @@ import { MessageService } from './services/message.service';
   styleUrl: './app.component.scss'
 })
 export class AppComponent implements OnInit {
-  constructor(private zeroService: ZeroService<Schema>, private messageService: MessageService, private themeService: ThemeService) {
-  }
+  authService = inject(AuthService);
+  messageService = inject(MessageService);
+  zeroService = inject(ZeroService<Schema>);
+  themeService = inject(ThemeService);
 
-  user: User | undefined;
+
   ngOnInit(): void {
     // this.themeService.themeChanges().subscribe(theme => {
     //   if (theme.oldValue) {
@@ -26,33 +28,42 @@ export class AppComponent implements OnInit {
     //   }
     //   this.renderer.addClass(document.body, theme.newValue);
     // // })
-    this.messageService.getUser(this.userID)
-    .then((user) => {
-      console.log('User:', user);
-      this.user = user as User;
-    });
+    // if(this.authService.isLoggedIn()) {
+    //   this.authService.getUser().then((user) => {
+    //     this.user = user;
+    //     console.log('User:', this.user);
+    //   }
+    //   ).catch((err) => {
+    //     console.error('Error fetching user:', err);
+    //   }
+    //   );
+    // }
   }
 
   // TODO: Provide an Auth Service to handle login/logout
   async login(evt: Event) {
     evt.preventDefault();
-    // just loging with randon user for now
-
-    if (!this.isLoggedIn) {
-      const res = await fetch('http://localhost:5173/api/login', {
-        credentials: 'include',
-      });
+    if(this.isLoggedIn) {
+      this.authService.logout();
+      location.reload();
     } else {
-      Cookies.remove("jwt");
+
+      // just loging with randon user for now
+      this.authService.login()
+      .then(() => {
+        location.reload();
+      }).catch((err) => {
+        console.error('Login failed:', err);
+      });
+
     }
-    location.reload();
   }
 
   get isLoggedIn() {
-    return this.zeroService.getZero().userID !== "anon";
+    return this.authService.isLoggedIn();
   }
 
-  get userID() {
-    return this.zeroService.getZero().userID;
+  get userName() {
+    return this.authService.user?.name || 'Guest';
   }
 }

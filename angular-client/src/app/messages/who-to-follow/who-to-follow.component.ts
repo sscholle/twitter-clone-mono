@@ -5,6 +5,8 @@ import { ZeroService } from "zero-angular";
 import { Follower, User } from "../../util/schema";
 import { allRepositories as repo } from '../../shared/allRepos';
 import { NgbTooltipModule } from "@ng-bootstrap/ng-bootstrap";
+import { MessageService } from "../../services/message.service";
+import { AuthService } from "../../services/auth.service";
 
 interface FollowerUser extends Follower {
   user: User
@@ -19,34 +21,30 @@ interface FollowerUser extends Follower {
 export class WhoToFollowComponent implements OnInit {
   // This component is used to display a list of users to follow
   // It can be used in the home component or anywhere else
-
-  zeroService = inject(ZeroService<Schema>);
-  userID: string = this.zeroService.getZero().userID;// TODO: store this in a service
+  authService = inject(AuthService<Schema>);
+  messageService = inject(MessageService);
   users: User[] = [];
   // user: User | null = null;
   followingUsers: FollowerUser[] = [];
 
+  get userID() {
+    return this.authService.userID || '';
+  }
   ngOnInit(): void {
-    repo.user?.find()
+    this.messageService.getUsers()
     .then((users) => {
       console.log('Users:', users);
       this.users = users as User[];
-    });
-    repo.follower?.findSubscribe(
-      {
-        "followerID": this.userID || '',
-      },
-      [{
-        table: "user",
-        cb: (q) => q,
-      }],
-    )
-    .subscribe((followers) => {
-      console.log('Followers:', followers);
-      this.followingUsers = followers as FollowerUser[];
-      // Regenerate the Messages query Config
-      // this.triggerFetch();
-    });
+    })
+    // this.messageService.getFollowers(this.authService.userID)
+    if(this.authService.isLoggedIn() && this.userID) {
+      this.messageService.observeFollowers(this.userID)
+      .subscribe((followers) => {
+        console.log('Followers:', followers);
+        this.followingUsers = followers as FollowerUser[];
+        console.log('Following Users:', this.followingUsers);
+      });
+    }
   }
 
   canFollowUser(userId: string): boolean {
@@ -59,11 +57,9 @@ export class WhoToFollowComponent implements OnInit {
   followUser(userId: string) {
     console.log('Following user:', userId);
     // Implement follow user logic here
-    repo.follower?.create({
-      userID: userId,
-      followerID: this.userID,
-    } as any).then((result) => {
-      console.log('Followed user:', result);
+    this.messageService.followUser(userId, this.userID)
+    .then(() => {
+      console.log('Followed user:', userId);
     }
     ).catch((error) => {
       console.error('Error following user:', error);
@@ -74,11 +70,9 @@ export class WhoToFollowComponent implements OnInit {
   unFollowUser(userId: string) {
     console.log('Unfollowing user:', userId);
     // Implement unfollow user logic here
-    repo.follower?.delete({
-      userID: userId,
-      followerID: this.userID,
-    } as any).then((result) => {
-      console.log('Unfollowed user:', result);
+    this.messageService.unFollowUser(userId, this.userID)
+    .then(() => {
+      console.log('Unfollowed user:', userId);
     }
     ).catch((error) => {
       console.error('Error unfollowing user:', error);

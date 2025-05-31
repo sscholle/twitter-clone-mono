@@ -10,13 +10,13 @@ import { RelationParam } from "./interfaces/IRead";
  * https://www.typescriptlang.org/docs/handbook/2/classes.html#implementing-custom-error-types-in-typescript
  */
 // import { ItemNotFoundError } from "./ItemNotFoundError";
-// class ItemNotFoundError extends Error {
-//   constructor(message: string) {
-//     super(message);
-//     this.name = "ItemNotFoundError";
-//     Object.setPrototypeOf(this, ItemNotFoundError.prototype);
-//   }
-// }
+export class ItemNotFoundError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ItemNotFoundError";
+    Object.setPrototypeOf(this, ItemNotFoundError.prototype);
+  }
+}
 
 type ParamValueType = string | number | boolean | Date | null | undefined;
 type ParamType = ParamValueType | ParamValueType[] | Record<string, ParamValueType> | Record<string, ParamValueType[]>;
@@ -209,7 +209,7 @@ export class ZeroRepository<S extends Schema, T extends Row<TableSchema>> extend
     });
   }
 
-  override find(
+  override find<E extends Error = Error>(
     queryParams: Record<string, ParamValue> = {},
     relations?: RelationParam<S>[],
     orderBy?: Record<string, string>,
@@ -223,7 +223,8 @@ export class ZeroRepository<S extends Schema, T extends Row<TableSchema>> extend
         this.query.useQuery(find)
           .pipe(
             filter(([result, resultType]) => {
-              return resultTypes.includes(resultType.type);// resultType.type === "complete";
+              return resultType.type === "complete";
+              // return resultTypes.includes(resultType.type);// resultType.type === "complete";
             })
           ).subscribe(([result, resultType]) => {
             resolve(result as T[]);
@@ -231,22 +232,28 @@ export class ZeroRepository<S extends Schema, T extends Row<TableSchema>> extend
       }
       catch (error) {
         console.error("Error finding item:", error);
-        // resolve(new ItemNotFoundError("Item not found or query failed"));
+        // resolve(new ItemNotFoundError("Item not found or query failed") as E);
+        // resolve(error as E);
         resolve([] as T[]);
       }
     });
   }
 
-  override findOne(id: string): Promise<T> {
+  override findOne(
+    id: string,
+    resultTypes: string[] = ["unknown", "complete"]
+  ): Promise<T> {
     return new Promise((resolve) => {
       try {
         this.query.useQuery(
-          this.baseQuery.where(this.idField[0] as any, id as any).one()
+          this.baseQuery
+          .where(this.idField[0] as any, id as any)
+          .one()
         )
           .pipe(
             filter(([result, resultType]) => {
-              console.log("resultType", resultType);
               return resultType.type === "complete";
+              // return resultTypes.includes(resultType.type);// resultType.type === "complete";
             })
           ).subscribe(([result, resultType]) => {
             console.log("result", result);
@@ -270,11 +277,14 @@ export class ZeroRepository<S extends Schema, T extends Row<TableSchema>> extend
     start?: Partial<T>,
     resultTypes: string[] = ["unknown", "complete"]
   ): Observable<T[]> {
+    console.log("findSubscribe", this.collectionName, queryParams, relations, orderBy, limit, start);
     const find = this.generateQueryObject(queryParams, relations, orderBy, limit, start);
     return this.query.useQuery(find)
       .pipe(
         filter(([result, resultType]) => {
-          return resultTypes.includes(resultType.type);// resultType.type === "complete";
+          console.log("resultType", resultType);
+          return resultType.type === "complete";
+          // return resultTypes.includes(resultType.type);// resultType.type === "complete";
         }),
         map(([result, type]) => {
           return result as T[];

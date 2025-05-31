@@ -37,7 +37,7 @@ export abstract class BaseRepository<T, S extends Schema> implements IWrite<T>, 
     delete(item: T): Promise<boolean> {
         throw new Error("Method not implemented.");
     }
-    find<E>(queryParams: Record<string, string>, relations?: RelationParam<S>[], orderBy?: Record<string, string>, limit?: 0 ): Promise<T[] | E> {
+    find<E extends Error>(queryParams: Record<string, string>, relations?: RelationParam<S>[], orderBy?: Record<string, string>, limit?: 0 ): Promise<T[] | E> {
         throw new Error("Method not implemented.");
     }
     findOne<E>(id: string): Promise<T | E> {

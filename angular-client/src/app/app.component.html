@@ -21,7 +21,7 @@
             <a class="nav-link" routerLink="/profile" routerLinkActive="active" ariaCurrentWhenActive="page">Profile</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="#" (click)="login($event)">{{ isLoggedIn ? `Logout  (${user?.name})` : 'Login (random)' }}</a>
+            <a class="nav-link" href="#" (click)="login($event)">{{ isLoggedIn ? `Logout  (${userName})` : 'Login (random)' }}</a>
           </li>
         </ul>
       </div>

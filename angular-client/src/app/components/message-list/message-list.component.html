@@ -42,7 +42,7 @@
 					<i class="bi bi-recycle"></i> {{ tweet.messageRepostCount }}
 				</button>
 				<button class="btn btn-sm btn-text col py-1 m-0" (click)="likeMessage(tweet.id)" placement="bottom" ngbTooltip="Like" container="body">
-					<i class="bi bi-hand-thumbs-up"></i> {{ tweet.messageLikeCount}}
+					<i class="bi" [ngClass]="{'bi-hand-thumbs-up-fill': isLiked(tweet.id), 'bi-hand-thumbs-up': !isLiked(tweet.id)}"></i> {{ tweet.messageLikeCount}}
 				</button>
 				<button class="btn btn-sm btn-text col py-1 m-0">
 					<i class="bi bi-graph-up" placement="bottom" ngbTooltip="Views" container="body"></i> {{ tweet.messageViewCount }}

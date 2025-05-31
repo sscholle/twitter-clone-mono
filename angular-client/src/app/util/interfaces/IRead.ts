@@ -7,7 +7,7 @@ export interface RelationParam<S extends Schema> {
 }
 
 export interface IRead<T> {
-    find<E extends Error | void>(queryParams: Record<string, string>, relations: RelationParam<any>[], orderBy: Record<string, string>, limit: 0 ): Promise<T[] | E>;
+    find<E extends Error>(queryParams: Record<string, string>, relations: RelationParam<any>[], orderBy: Record<string, string>, limit: 0 ): Promise<T[] | E>;
     /**
      * @todo - consider using a query config object instead of multiple parameters.
      * @todo - implement Error handling for not found cases.

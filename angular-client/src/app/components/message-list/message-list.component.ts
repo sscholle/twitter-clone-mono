@@ -6,7 +6,6 @@ import { ZeroService } from 'zero-angular';
 import { DisplayMessage } from '../../shared/DisplayMessage';
 import { auditTime, BehaviorSubject, filter, take } from 'rxjs';
 import { QueryConfig } from '../../util/ZeroRepository';
-import { allRepositories as repo } from '../../shared/allRepos';
 import { MyEntityViewComponent } from '../../my-entity-view/my-entity-view.component';
 import { EntityViewPermission } from '../../my-entity-view/machine';
 import { MessageService } from '../../services/message.service';
@@ -74,7 +73,7 @@ export class MessageList implements OnInit, OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['queryConfig'] && changes['queryConfig'].currentValue) {
+    if (changes['queryConfig']) {
       console.log('Query Config Changed:', changes['queryConfig'].currentValue);
       // If queryConfig has changed, we need to re-fetch the messages
       this.triggerFetch();
@@ -86,9 +85,11 @@ export class MessageList implements OnInit, OnChanges {
   triggerFetch() {
     if(!this.queryConfig) {
       console.warn('No queryConfig provided, cannot fetch messages');
+      this.messages = [];
       return;
     }
-    this.messageService.observeMessages(this.queryConfig
+    this.messageService.observeMessages(
+      this.queryConfig
     ).subscribe((messages) => {
       console.log('Messages:', messages);
       // this.displaymessages = messages as DisplayMessage[];
@@ -261,7 +262,11 @@ export class MessageList implements OnInit, OnChanges {
     console.log('Batch Message View');
     console.log('User ID:', this.userID);
     if (this.userID === 'anon') return;
-    repo.messageView?.batchUpsert(
+    if (!this.messages || this.messages.length === 0) {
+      console.warn('No messages to batch upsert');
+      return;
+    }
+    this.messageService.batchMessageView(
       this.messages
         .filter((message) => message.messageView.every(mv => mv.userID !== this.userID))
         .map((message) => {
@@ -271,7 +276,7 @@ export class MessageList implements OnInit, OnChanges {
             timestamp: new Date().getTime(),
           }
         })
-    )
+      )
       .then(() => {
         console.log('Messages Batch Upserted');
       })
@@ -311,18 +316,28 @@ export class MessageList implements OnInit, OnChanges {
       console.error("Message not found", messageID);
       return;
     }
-    repo.messageView?.update({
-      userID: this.userID,
-      messageID,
-      like: true,// TODO: implement toggle
-      likeTimestamp: new Date().getTime(),
-    })
+    const isLiked = this.isLiked(messageID);
+    this.messageService.likeMessage(messageID, this.userID, !isLiked)
       .then(() => {
         console.log('Message Liked');
       })
       .catch((error) => {
         console.error('Error Liking message:', error);
       });
+  }
+
+  isLiked(messageID: string) {
+    const message = this.messages?.find((message) => message.id === messageID);
+    if (!message) {
+      // console.error("Message not found", messageID);
+      return false;
+    }
+    const messageView = message.messageView.find((view) => view.userID === this.userID);
+    if (!messageView) {
+      // console.error("MessageView not found", messageID);
+      return false;
+    }
+    return messageView.like;
   }
 
   replyMessage(messageID: string) {
@@ -350,18 +365,14 @@ export class MessageList implements OnInit, OnChanges {
       console.error("Message not found", messageID);
       return;
     }
-    repo.messageView?.update({
-      userID: this.userID,
-      messageID,
-      bookmark: true,
-      bookmarkTimestamp: new Date().getTime(),
-    })
-      .then(() => {
-        console.log('Message Bookmarked');
-      })
-      .catch((error) => {
-        console.error('Error Bookmarking message:', error);
-      });
+    const isBookmarked = this.isBookmarked(messageID);
+    this.messageService.bookmarkMessage(messageID, this.userID, !isBookmarked)
+    .then(() => {
+      console.log('Message Bookmarked')
+    }
+    ).catch((error) => {
+      console.error('Error Bookmarking message:', error);
+    });
   }
 
   isBookmarked(messageID: string) {

@@ -1,4 +1,4 @@
-import { ApplicationConfig, provideZoneChangeDetection, isDevMode } from '@angular/core';
+import { ApplicationConfig, provideZoneChangeDetection, isDevMode, provideAppInitializer, inject } from '@angular/core';
 import { provideRouter, withViewTransitions } from '@angular/router';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { routes } from './app.routes';
@@ -28,9 +28,21 @@ export const appConfig: ApplicationConfig = {
     provideZoneChangeDetection({ eventCoalescing: true }),
     // Routes with Animations
     provideRouter(routes, withViewTransitions()),
+    // provideAppInitializer(() => {
+    //   const authService = inject(AuthService); // Set the userID in AuthService
+    //   authService.userID = userID; // Store the userID in AuthService
+    //   authService.jwt = encodedJWT || ''; // Store the JWT in AuthService
+    //   localStorage.setItem('userID', userID);
+    //   localStorage.setItem('jwt', encodedJWT || '');
+    //   console.log("localStorage userID", localStorage.getItem('userID'));
+    //   console.log("localStorage jwt", localStorage.getItem('jwt'));
+    //   authService.login(); // Call login to set up the user
+    //   // This is a placeholder for any app initialization logic you might need
+    //   return Promise.resolve();
+    // }),
     // SYNC: Provide the Zero service with the userID and JWT for authentication
     provideZero(new Zero({
-      userID,
+      userID: userID,
       auth: () => encodedJWT,
       server: environment.cache_server || 'http://localhost:4848',
       schema,

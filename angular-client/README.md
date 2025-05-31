@@ -62,12 +62,14 @@ Refer to Hello-Zero project
 ### FEATURES
 
 - Home
-  - Followed
-    - pass in query to Message List
-      - where User included in Followed List
+  - Followees Top 10 Topics
+  - Followees Messages
+  - Followees Trending
 - Explore
-  - Trending Messages/Twitters
+  - Trending Topics
+  - Trending Messages
     - determine query that aggregates likes/comment/repost counts and sort by those values desc
+  - Trending Users (messages with most views/likes/replies/reposts)
 - Bookmarks
   - only your bookmarked goodies
 - Profile
