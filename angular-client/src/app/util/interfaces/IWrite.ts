@@ -1,5 +1,5 @@
-export interface IWrite<T> {
-    create(item: T): Promise<boolean>;
-    update(item: T): Promise<boolean>;
-    delete(item: T): Promise<boolean>;
+export interface IWrite<TReturn> {
+    create(item: TReturn): Promise<boolean>;
+    update(item: TReturn): Promise<boolean>;
+    delete(item: TReturn): Promise<boolean>;
   }

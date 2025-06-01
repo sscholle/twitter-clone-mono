@@ -1,12 +1,13 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit } from '@angular/core';
 import { RouterModule } from '@angular/router';
-import { Schema, User } from './util/schema';
+import { Schema } from './util/schema';
 import { SidebarComponent } from "./components/sidebar/sidebar.component";
 import { ThemeService } from './services/theme.service';
 import { CommonModule } from '@angular/common';
 import { ZeroService } from 'zero-angular';
 import { MessageService } from './services/message.service';
 import { AuthService } from './services/auth.service';
+import { RepoService } from './services/repo.service';
 
 @Component({
   selector: 'app-root',
@@ -14,30 +15,29 @@ import { AuthService } from './services/auth.service';
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })
-export class AppComponent implements OnInit {
+export class AppComponent implements OnInit, OnDestroy {
+  ngOnDestroy(): void {
+    this.repoService.destroyRepositories()
+  }
+  repoService = inject(RepoService);
   authService = inject(AuthService);
   messageService = inject(MessageService);
   zeroService = inject(ZeroService<Schema>);
   themeService = inject(ThemeService);
 
-
   ngOnInit(): void {
+    this.authService.runAuth().then(() => {
+      console.log('Auth Service initialized');
+      // this.initApp();
+    }).catch((err) => {
+      console.error('Error initializing Auth Service:', err);
+    });
     // this.themeService.themeChanges().subscribe(theme => {
     //   if (theme.oldValue) {
     //     this.renderer.removeClass(document.body, theme.oldValue);
     //   }
     //   this.renderer.addClass(document.body, theme.newValue);
     // // })
-    // if(this.authService.isLoggedIn()) {
-    //   this.authService.getUser().then((user) => {
-    //     this.user = user;
-    //     console.log('User:', this.user);
-    //   }
-    //   ).catch((err) => {
-    //     console.error('Error fetching user:', err);
-    //   }
-    //   );
-    // }
   }
 
   // TODO: Provide an Auth Service to handle login/logout
@@ -55,7 +55,6 @@ export class AppComponent implements OnInit {
       }).catch((err) => {
         console.error('Login failed:', err);
       });
-
     }
   }
 

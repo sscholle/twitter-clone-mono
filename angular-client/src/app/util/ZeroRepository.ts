@@ -1,4 +1,4 @@
-import { Query, Row, Schema, SimpleOperator, TableMutator, TableSchema, Zero } from "@rocicorp/zero";
+import { Query, ResultType, Row, Schema, SimpleOperator, TableMutator, TableSchema, TTL, Zero } from "@rocicorp/zero";
 import { BaseRepository } from "./BaseRepository";
 import { QueryService, ZeroService } from "zero-angular";
 import { filter, map, Observable } from "rxjs";
@@ -24,21 +24,21 @@ type ParamType = ParamValueType | ParamValueType[] | Record<string, ParamValueTy
 // type ParamValue = [SimpleOperator, ParamValueType] | ParamValueType;
 type ParamValue = [SimpleOperator, ParamType] | ParamType;
 
-export interface QueryConfig<S extends Schema, T extends Row<TableSchema>> {
+export interface QueryConfig<TSchema extends Schema, TReturn extends Row<TableSchema>, TTable extends keyof TSchema['tables'] & string> {
   queryParams: Record<string, ParamValue>;
-  relations?: RelationParam<S>[];
+  relations?: RelationParam<TSchema, TTable>[];
   orderBy?: Record<string, string>;
   pageSize?: number;
-  startRecord?: Partial<T>
+  startRecord?: Partial<TReturn>
 }
 
-export class ZeroRepository<S extends Schema, T extends Row<TableSchema>> extends BaseRepository<T, S> {
-  private zeroService = inject(ZeroService<S>);
+export class ZeroRepository<TSchema extends Schema, TTable extends keyof TSchema['tables'] & string, TReturn extends Row<TableSchema>> extends BaseRepository<TReturn, TSchema, TTable> {
+  private zeroService = inject(ZeroService<TSchema>);
   private query = inject(QueryService);
-  private z = this.zeroService.getZero() as Zero<S>;
+  private z = this.zeroService.getZero() as Zero<TSchema>;
 
   constructor(
-    private collectionName: string,
+    private collectionName: TTable,
     /**
      * Bridge Tables would have multiple ID fields, e.g. Follower has userID and followerID.
      * For a single ID field, you can just use ["id"].
@@ -51,7 +51,7 @@ export class ZeroRepository<S extends Schema, T extends Row<TableSchema>> extend
     this.baseMutate = this.z.mutate[this.collectionName];
   }
 
-  mapItemToIdField(item: T): Record<string, string> {
+  mapItemToIdField(item: TReturn): Record<string, string> {
     const idField = this.idField.reduce((acc, field) => {
       acc[field] = item[field];
       return acc;
@@ -59,122 +59,117 @@ export class ZeroRepository<S extends Schema, T extends Row<TableSchema>> extend
     return idField;
   }
 
-  baseQuery: Query<S, string>;
-  baseMutate: TableMutator<S["tables"][string]>;
-  override create(item: T): Promise<boolean> {
+  baseQuery: Query<TSchema, TTable>;
+  baseMutate: TableMutator<TSchema["tables"][TTable]>;
+  override create(item: TReturn): Promise<boolean> {
     return new Promise((resolve) => {
-      try {
-        this.baseMutate.insert({ ...item, ...this.mapItemToIdField(item) } as any);
+      this.baseMutate.insert({ ...item, ...this.mapItemToIdField(item) } as any)
+      .then(() => {
+        console.log("Item created successfully:", item);
         resolve(true);
-      }
-      catch (error) {
+      }).catch((error) => {
         console.error("Error creating item:", error);
         resolve(false);
-      }
+      });
     });
   }
 
-  override update(item: Partial<T>): Promise<boolean> {
+  override update(item: Partial<TReturn>): Promise<boolean> {
     return new Promise((resolve) => {
-      try {
-        this.baseMutate.update({ ...item, ...this.mapItemToIdField(item as T) } as any);
+      this.baseMutate.update({ ...item, ...this.mapItemToIdField(item as TReturn) } as any)
+      .then(() => {
+        console.log("Item updated successfully:", item);
         resolve(true);
-      }
-      catch (error) {
+      }).catch((error) => {
         console.error("Error updating item:", error);
         resolve(false);
-      }
+      });
     });
   }
 
-  override upsert(item: Partial<T>): Promise<boolean> {
+  override upsert(item: Partial<TReturn>): Promise<boolean> {
     return new Promise((resolve) => {
-      try {
-        console.log("upsert", item);
-        this.baseMutate.upsert({ ...item, ...this.mapItemToIdField(item as T) } as any);
+      this.baseMutate.upsert({ ...item, ...this.mapItemToIdField(item as TReturn) } as any)
+      .then(() => {
+        console.log("Item upserted successfully:", item);
         resolve(true);
-      }
-      catch (error) {
+      }).catch((error) => {
         console.error("Error upserting item:", error);
         resolve(false);
-      }
+      });
     });
   }
-  override batchCreate(items: T[]): Promise<boolean> {
+  override batchCreate(items: TReturn[]): Promise<boolean> {
     return new Promise((resolve) => {
-      try {
-        this.z.mutateBatch(
-          (tx) => {
-            items.forEach((item) => {
-              tx[this.collectionName].insert({ ...item, ...this.mapItemToIdField(item) } as any);
-            });
-          }
-        )
+      this.z.mutateBatch(
+        (tx) => {
+          items.forEach((item) => {
+            tx[this.collectionName].insert({ ...item, ...this.mapItemToIdField(item) } as any);
+          });
+        }
+      ).then(() => {
+        console.log("Batch create successful:", items);
         resolve(true);
-      }
-      catch (error) {
+      }).catch((error) => {
         console.error("Error batch creating items:", error);
         resolve(false);
-      }
+      });
     });
   }
-  override batchUpdate(items: T[]): Promise<boolean> {
+  override batchUpdate(items: TReturn[]): Promise<boolean> {
     return new Promise((resolve) => {
-      try {
-        this.z.mutateBatch(
-          (tx) => {
-            items.forEach((item) => {
-              tx[this.collectionName].update({ ...item, ...this.mapItemToIdField(item as T) } as any);
-            });
-          }
-        )
+      this.z.mutateBatch(
+        (tx) => {
+          items.forEach((item) => {
+            tx[this.collectionName].update({ ...item, ...this.mapItemToIdField(item as TReturn) } as any);
+          });
+        }
+      ).then(() => {
+        console.log("Batch update successful:", items);
         resolve(true);
-      }
-      catch (error) {
+      }).catch((error) => {
         console.error("Error batch updating items:", error);
         resolve(false);
-      }
+      });
     });
   }
-  override batchDelete(items: T[]): Promise<boolean> {
+  override batchDelete(items: TReturn[]): Promise<boolean> {
     return new Promise((resolve) => {
-      try {
-        this.z.mutateBatch(
-          (tx) => {
-            items.forEach((item) => {
-              tx[this.collectionName].delete({ ...item, ...this.mapItemToIdField(item as T) } as any);
-            });
-          }
-        )
+      this.z.mutateBatch(
+        (tx) => {
+          items.forEach((item) => {
+            tx[this.collectionName].delete({ ...item, ...this.mapItemToIdField(item as TReturn) } as any);
+          });
+        }
+      ).then(() => {
+        console.log("Batch delete successful:", items);
         resolve(true);
-      }
-      catch (error) {
+      }).catch((error) => {
         console.error("Error batch deleting items:", error);
         resolve(false);
-      }
+      });
     });
   }
-  override batchUpsert(items: Partial<T>[]): Promise<boolean> {
+  override batchUpsert(items: Partial<TReturn>[]): Promise<boolean> {
     console.log("batchUpsert", items);
     return new Promise((resolve) => {
-      try {
-        if(items.length === 0) {
-          resolve(true);
-          return;
-        }
-        this.z.mutateBatch(
-          (tx) => {
-            items.forEach((item) => {
-              tx[this.collectionName].upsert({ ...item, ...this.mapItemToIdField(item as T) } as any);
-            });
-          }
-        )
+      if(items.length === 0) {
         resolve(true);
+        return;
       }
-      catch (error) {
+      this.z.mutateBatch(
+        (tx) => {
+          items.forEach((item) => {
+            tx[this.collectionName].upsert({ ...item, ...this.mapItemToIdField(item as TReturn) } as any);
+          });
+        }
+      ).then(() => {
+        console.log("Batch upsert successful:", items);
+        resolve(true);
+      }).catch((error) => {
         console.error("Error batch upserting items:", error);
         resolve(false);
-      }
+      });
     });
   }
   // override batchDeleteByID(ids: string[]): Promise<boolean> {
@@ -196,100 +191,118 @@ export class ZeroRepository<S extends Schema, T extends Row<TableSchema>> extend
   //   });
   // }
 
-  override delete(item: T): Promise<boolean> {
+  override delete(item: TReturn): Promise<boolean> {
     return new Promise((resolve) => {
-      try {
-        this.baseMutate.delete({ ...this.mapItemToIdField(item) } as any);
+      this.baseMutate.delete({ ...this.mapItemToIdField(item) } as any)
+      .then(() => {
+        console.log("Item deleted successfully:", item);
         resolve(true);
-      }
-      catch (error) {
+      }).catch((error) => {
         console.error("Error deleting item:", error);
         resolve(false);
-      }
+      });
     });
   }
 
   override find<E extends Error = Error>(
     queryParams: Record<string, ParamValue> = {},
-    relations?: RelationParam<S>[],
+    relations?: RelationParam<TSchema, TTable>[],
     orderBy?: Record<string, string>,
     limit?: number,
-    start?: Partial<T>,
-    resultTypes: string[] = ["unknown", "complete"]
-  ): Promise<T[]> {
-    return new Promise((resolve) => {
-      try {
-        const find = this.generateQueryObject(queryParams, relations, orderBy, limit, start);
-        this.query.useQuery(find)
-          .pipe(
-            filter(([result, resultType]) => {
-              return resultType.type === "complete";
-              // return resultTypes.includes(resultType.type);// resultType.type === "complete";
-            })
-          ).subscribe(([result, resultType]) => {
-            resolve(result as T[]);
-          });
-      }
-      catch (error) {
-        console.error("Error finding item:", error);
-        // resolve(new ItemNotFoundError("Item not found or query failed") as E);
-        // resolve(error as E);
-        resolve([] as T[]);
-      }
-    });
+    start?: Partial<TReturn>,
+    resultTypes: string[] = ["unknown", "complete"],
+    ttl: TTL = '10s'
+  ): Observable<TReturn[]> {
+    try {
+      const find = this.generateQueryObject(queryParams, relations, orderBy, limit, start);
+      return this.query.useQuery<TSchema, TTable, TReturn>(find, { ttl })
+        .pipe(
+          filter(([result, resultType]) => {
+            // return resultType.type === "complete";
+            return resultTypes.includes(resultType.type);// resultType.type === "complete";
+          }),
+          map(([result, resultType]) => {
+            console.log("find result", result, "resultType", resultType);
+            return result as TReturn[];
+          })
+        )
+    }
+    catch (error) {
+      console.error("Error finding item:", error);
+      // resolve(new ItemNotFoundError("Item not found or query failed") as E);
+      // resolve(error as E);
+      return new Observable<TReturn[]>((subscriber) => {
+        subscriber.error(new ItemNotFoundError("Item not found or query failed") as E);
+      });
+    }
   }
 
+  /**
+   * Should only be used where there is a single ID field.
+   * If you have a composite key, use findSubscribe with a query object.
+   * @param id
+   * @param resultTypes
+   * @returns
+   */
   override findOne(
     id: string,
-    resultTypes: string[] = ["unknown", "complete"]
-  ): Promise<T> {
-    return new Promise((resolve) => {
-      try {
-        this.query.useQuery(
-          this.baseQuery
-          .where(this.idField[0] as any, id as any)
-          .one()
-        )
-          .pipe(
-            filter(([result, resultType]) => {
-              return resultType.type === "complete";
-              // return resultTypes.includes(resultType.type);// resultType.type === "complete";
-            })
-          ).subscribe(([result, resultType]) => {
-            console.log("result", result);
-            const data = result as unknown as T;
-            resolve(data);
-          });
-      }
-      catch (error) {
-        console.error("Error finding item:", error);
-        resolve({} as T);
-      }
-    });
+    resultTypes: string[] = ["unknown", "complete"],
+    ttl: TTL = '1m'
+  ): Observable<TReturn> {
+    return this.query.useQuery(
+      this.baseQuery
+      .where(this.idField[0] as any, id as any)
+      .one(),
+      { ttl } // Set TTL for the query
+    )
+    .pipe(
+      filter(([result, resultType]) => {
+        // return resultType.type === "complete";
+        return resultTypes.includes(resultType.type);// resultType.type === "complete";
+      }),
+      map(([result, resultType]) => {
+        console.log("findOne result", result, "resultType", resultType);
+        if (result) {
+          return result as unknown as TReturn;
+        } else {
+          // TODO: return error types...
+          return null as unknown as TReturn;
+          // throw new ItemNotFoundError(`Item with ID ${id} not found`);
+        }
+      })
+    )
   }
 
   // #region CUSTOM QUERIES
   findSubscribe(
     queryParams: Record<string, ParamValue> = {},
-    relations?: RelationParam<S>[],
+    relations?: RelationParam<TSchema, TTable>[],
     orderBy?: Record<string, string>,
     limit?: number,
-    start?: Partial<T>,
-    resultTypes: string[] = ["unknown", "complete"]
-  ): Observable<T[]> {
+    start?: Partial<TReturn>,
+    resultTypes: ResultType[] = ["unknown", "complete"],
+    ttl: TTL = '1m'
+  ): Observable<TReturn[]> {
     console.log("findSubscribe", this.collectionName, queryParams, relations, orderBy, limit, start);
-    const find = this.generateQueryObject(queryParams, relations, orderBy, limit, start);
-    return this.query.useQuery(find)
-      .pipe(
-        filter(([result, resultType]) => {
-          console.log("resultType", resultType);
-          return resultType.type === "complete";
-          // return resultTypes.includes(resultType.type);// resultType.type === "complete";
-        }),
-        map(([result, type]) => {
-          return result as T[];
-        })
-      );
+    try {
+      const find = this.generateQueryObject(queryParams, relations, orderBy, limit, start);
+      return this.query.useQuery(find, { ttl })
+        .pipe(
+          filter(([result, resultType]) => {
+            // console.log("resultType", resultType);
+            // return resultType.type === "complete";
+            return resultTypes.includes(resultType.type);// resultType.type === "complete";
+          }),
+          map(([result, type]) => {
+            return result as TReturn[];
+          })
+        );
+    } catch (error) {
+      console.error("Error finding item:", error);
+      return new Observable<TReturn[]>((subscriber) => {
+        subscriber.error(new ItemNotFoundError("Item not found or query failed"));
+      });
+    }
   }
   // #endregion CUSTOM QUERIES
 
@@ -305,10 +318,12 @@ export class ZeroRepository<S extends Schema, T extends Row<TableSchema>> extend
    * @param start
    * @returns
    */
-  generateQueryObject(queryParams: Record<string, ParamValue>, relations?: RelationParam<S>[], orderBy?: Record<string, string>, limit?: number, start?: Partial<T>): Query<S, string> {
-    let find = this.baseQuery;
+  generateQueryObject(queryParams: Record<string, ParamValue>, relations?: RelationParam<TSchema, TTable>[], orderBy?: Record<string, string>, limit?: number, start?: Partial<TReturn>): Query<TSchema, TTable, TReturn> {
+    let find = this.baseQuery as Query<TSchema, TTable, TReturn>;
     relations?.forEach((relation) => {
-      find = find.related(relation.table as any, (query) => relation.cb(query as Query<S, string>));
+      // find = find.related(relation.table, (query) => relation.cb(query as Query<TSchema, TTable>));
+
+      find = find.related(relation.table as TTable, (query) => relation.cb(query as Query<TSchema, TTable>)) as unknown as Query<TSchema, TTable, TReturn>;
     });
     console.log("find", this.collectionName, queryParams, relations, orderBy, limit, start);
     Object.keys(queryParams).forEach((key) => {
@@ -334,4 +349,12 @@ export class ZeroRepository<S extends Schema, T extends Row<TableSchema>> extend
     return find;
   }
   // #endregion UTILITY METHODS
+
+  destroyZero() {
+    console.log("Destroying ZeroRepository for collection:", this.collectionName);
+    this.z.close(); // Close the Zero instance
+    this.z = null as any; // Clear the Zero instance
+    this.baseQuery = null as any; // Clear the base query
+    this.baseMutate = null as any; // Clear the base mutator
+  }
 }

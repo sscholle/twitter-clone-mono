@@ -15,7 +15,8 @@ import { QueryService, ZeroService } from 'zero-angular';
 import { Medium, Message, Schema, schema, User } from '../util/schema';
 import { FormsModule } from '@angular/forms';
 import { randID } from '../util/rand';
-import { allRepositories as repo } from '../shared/allRepos';
+import { MessageService } from '../services/message.service';
+import { firstValueFrom } from 'rxjs';
 
 const { inspect } = createBrowserInspector({
   // Comment out the line below to start the inspector
@@ -32,6 +33,7 @@ export class MyEntityViewComponent implements OnInit, OnDestroy {
 	activeModal = inject(NgbActiveModal);
   queryService = inject(QueryService);
   zeroService = inject(ZeroService<Schema>);
+  messageService = inject(MessageService<Schema>);
   JSON = JSON;
   machine: Actor<AnyStateMachine> | undefined;
   snapshot: AnyMachineSnapshot = {} as AnyMachineSnapshot;
@@ -88,39 +90,23 @@ export class MyEntityViewComponent implements OnInit, OnDestroy {
           },
         },
         actors: {
-          tryCreateEntity: fromPromise(({ input }: { input: EntityViewContext }) => {
+          tryCreateEntity: fromPromise(({ input }) => {
             const message = this.messageShape(
               this.selectedMedium,
               this.zeroService.getZero().userID,// TODO: get user id from auth
               this.message,
             )
-            return new Promise((resolve) => {
-              repo.message?.create(message)
-              .then(() => {
-                console.log('Created message:', message);
-                resolve(true);
-              })
-              .catch((error) => {
-                console.error('Error creating message:', error);
-                resolve(false);
-              });
-            })
+            return this.messageService.postMessage(
+              message.body,
+              message.senderID,
+              message.mediumID
+            );
           }),
-          loadEntity: fromPromise(({ input }: { input: EntityViewContext }) => {
-            return new Promise((resolve) => {
-              console.log('Loading message:', input.entityId);
-              repo.message?.findOne(input.entityId as string)
-              .then((data) => {
-                console.log('Loaded message:', data);
-                resolve(data);
-              })
-              .catch((error) => {
-                console.error('Error loading message:', error);
-                resolve(null);
-              });
-            });
+          loadEntity: fromPromise(({ input }) => {
+            console.log('Loading message:', input.entityId);
+            return firstValueFrom( this.messageService.getMessage(input.entityId as string) )
           }),
-          tryUpdateEntity: fromPromise(({ input }: { input: EntityViewContext }) => {
+          tryUpdateEntity: fromPromise(({ input }) => {
             const message: Partial<Message> = {
               mediumID: this.selectedMedium,
               body: this.message,
@@ -128,36 +114,16 @@ export class MyEntityViewComponent implements OnInit, OnDestroy {
               id: input.entityId as string,
             };
             console.log('Updating message:', input.entityId, message);
-            return new Promise((resolve) => {
-              repo.message?.update(message)
-              .then(() => {
-                console.log('Updated message:', input.data);
-                resolve(true);
-              })
-              .catch((error) => {
-                console.error('Error updating message:', error);
-                resolve(false);
-              });
-            });
+            return this.messageService.updateMessage(message)
           }),
-          tryDeleteEntity: fromPromise(({ input }: { input: EntityViewContext }) => {
+          tryDeleteEntity: fromPromise(({ input }) => {
             const message: Partial<Message> = {
               mediumID: this.selectedMedium,
               body: this.message,
               senderID: this.zeroService.getZero().userID,
               id: input.entityId as string,
             };
-            return new Promise((resolve) => {
-              repo.message?.delete(message as Message)
-              .then(() => {
-                console.log('Deleted message:', input.entityId);
-                resolve(true);
-              })
-              .catch((error) => {
-                console.error('Error deleting message:', error);
-                resolve(false);
-              });
-            });
+            return this.messageService.deleteMessage(message as Message)
           })
         }
       }),
@@ -184,10 +150,15 @@ export class MyEntityViewComponent implements OnInit, OnDestroy {
   selectedMedium: string = "";
   message: string = "";
   loadQueryData() {
-    repo.medium?.find().then((mediums) => {
+    this.messageService.getMediums()
+    .subscribe((mediums) => {
       console.log('Mediums:', mediums);
-      this.mediums = mediums;
-      this.selectedMedium = mediums[0].id;
+      this.mediums = mediums as Medium[];
+      if (mediums.length > 0) {
+        this.selectedMedium = mediums[0].id;
+      } else {
+        this.selectedMedium = '';
+      }
     });
   }
 

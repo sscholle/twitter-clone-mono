@@ -2,9 +2,10 @@ import { inject, Injectable } from "@angular/core";
 import { Schema as RSchema} from "@rocicorp/zero";
 import { Follower, Medium, Message, MessageView, Schema, Topic, User } from "../util/schema";
 import { Observable } from "rxjs";
-import { ItemNotFoundError, QueryConfig, ZeroRepository } from "../util/ZeroRepository";
+import { ItemNotFoundError, QueryConfig } from "../util/ZeroRepository";
 import { AuthService } from "./auth.service";
 import { RepoService } from "./repo.service";
+import { messageShape } from "../shared/DisplayMessage";
 
 /**
  * Potential Messages Service
@@ -14,8 +15,6 @@ import { RepoService } from "./repo.service";
   providedIn: 'root'
 })
 export class MessageService<S extends RSchema = Schema> {
-
-
   authService = inject(AuthService); // Assuming you have an AuthService for authentication
   repoService  = inject(RepoService<S>);
   topicRepo = this.repoService.topicRepo;
@@ -30,78 +29,37 @@ export class MessageService<S extends RSchema = Schema> {
   }
 
   // #region GET MULTIPLE
-  getTopics(): Promise<Topic[]> {
-    // return repo.topic?.find() || Promise.resolve([]);
-    if (this.topicRepo) {
-      return this.topicRepo.find();
-    } else {
-      console.warn("Topic repository is not available.");
-      return Promise.resolve([]);
-    }
+  getTopics(): Observable<Topic[]> {
+    return this.topicRepo.find();
   }
-  getUsers(): Promise<User[] | Error> {
-    // return repo.user?.find() || Promise.resolve([]);
-    if (this.userRepo) {
-      return this.userRepo.find<ItemNotFoundError>();// TODO: investigate error handling techniques
-    } else {
-      console.warn("User repository is not available.");
-      return Promise.resolve([]);
-    }
+  getUsers(): Observable<User[] | Error> {
+    return this.userRepo.find<ItemNotFoundError>();// TODO: investigate error handling techniques
   }
-  getMediums(): Promise<Medium[]> {
-    // return repo.medium?.find() || Promise.resolve([]);
-    if (this.mediumRepo) {
-      return this.mediumRepo.find();
-    } else {
-      console.warn("Medium repository is not available.");
-      return Promise.resolve([]);
-    }
+  getMediums(): Observable<Medium[]> {
+    return this.mediumRepo.find();
   }
   // #endregion GET MULTIPLE
 
   // #region GET SINGLE
-  getMedium(mediumID: string): Promise<Medium | null> {
-    // return repo.medium?.findOne(mediumID) || Promise.resolve(null);
-    if (this.mediumRepo) {
+  getMedium(mediumID: string): Observable<Medium | null> {
       return this.mediumRepo.findOne(mediumID);
-    } else {
-      console.warn("Medium repository is not available.");
-      return Promise.resolve(null);
-    }
   }
-  getTopic(topicID: string): Promise<Topic | null> {
-    // return repo.topic?.findOne(topicID) || Promise.resolve(null);
-    if (this.topicRepo) {
-      return this.topicRepo.findOne(topicID);
-    } else {
-      console.warn("Topic repository is not available.");
-      return Promise.resolve(null);
-    }
+  getTopic(topicID: string): Observable<Topic | null> {
+    return this.topicRepo.findOne(topicID);
   }
 
-  getMessage(messageID: string): Promise<Message | null> {
-    // return repo.message?.findOne(messageID) || Promise.resolve(null);
-    if (this.messageRepo) {
-      return this.messageRepo.findOne(messageID);
-    } else {
-      console.warn("Message repository is not available.");
-      return Promise.resolve(null);
-    }
+  getMessage(messageID: string): Observable<Message | null> {
+    return this.messageRepo.findOne(messageID);
   }
   // #endregion GET SINGLE
 
 
   // #region GET MESSAGES
-  getAllMessages(): Promise<Message[]> {
-    if(this.messageRepo) {
-      return this.messageRepo.find();
-    }else {
-      console.warn("Message repository is not available.");
-      return Promise.resolve([]);
-    }
+  getAllMessages(): Observable<Message[]> {
+    return this.messageRepo.find();
   }
 
-  observeMessages(queryConfig: QueryConfig<S, Message>) {
+  observeMessages(queryConfig: QueryConfig<S, Message, 'message'>) {
     if (this.messageRepo) {
       return this.messageRepo.findSubscribe(
         queryConfig.queryParams || {},
@@ -169,7 +127,7 @@ export class MessageService<S extends RSchema = Schema> {
    * @param startRecord
    * @returns
    */
-  observeMessageViews(queryConfig: QueryConfig<S, MessageView>) {
+  observeMessageViews(queryConfig: QueryConfig<S, MessageView, 'message_view'>): Observable<MessageView[]> {
     if (this.messageViewsRepo) {
       return this.messageViewsRepo.findSubscribe(
         queryConfig.queryParams || {},
@@ -211,6 +169,21 @@ export class MessageService<S extends RSchema = Schema> {
       followerID,
     } as any)
   }
+  postMessage(body: string, senderID: string, mediumID: string): Promise<boolean> {
+    if (!this.messageRepo) {
+      console.warn("Message repository is not available.");
+      return Promise.reject("Message repository is not available.");
+    }
+    if (!senderID) {
+      console.warn("Message must have a senderID.");
+      return Promise.reject("Message must have a senderID.");
+    }
+    if (!body) {
+      console.warn("Message must have a body.");
+      return Promise.reject("Message must have a body.");
+    }
+    return this.messageRepo.create(messageShape(mediumID, body, senderID));
+  }
 
   bookmarkMessage(messageID: string, userID: string, flag: boolean): Promise<boolean> {
     if (!this.messageViewsRepo) {
@@ -246,6 +219,35 @@ export class MessageService<S extends RSchema = Schema> {
   }
   // #endregion CREATE/DELETE
 
+  // #region UPDATE
+  updateMessage(message: Partial<Message>): Promise<boolean> {
+    if (!this.messageRepo) {
+      console.warn("Message repository is not available.");
+      return Promise.reject("Message repository is not available.");
+    }
+    if (!message.id) {
+      console.warn("Message must have an id to update.");
+      return Promise.reject("Message must have an id to update.");
+    }
+    return this.messageRepo.update(message);
+  }
+
+
+  deleteMessage(message: Message): Promise<boolean> {
+    if (!this.messageRepo) {
+      console.warn("Message repository is not available.");
+      return Promise.reject("Message repository is not available.");
+    }
+    if (!message.id) {
+      console.warn("Message must have an id to delete.");
+      return Promise.reject("Message must have an id to delete.");
+    }
+    return this.messageRepo.delete(message);
+  }
+  // #endregion UPDATE
+
+
+  // #region FORMAT AND FILTER MESSAGES
   formatMessage(message: string): string {
     // Example formatting function
     return message.trim().replace(/\s+/g, ' ');
@@ -255,9 +257,10 @@ export class MessageService<S extends RSchema = Schema> {
     // Example filter function
     return messages.filter(msg => msg.includes(keyword));
   }
+  // #endregion FORMAT AND FILTER MESSAGES
 
   // #region MESSAGE LIST QUERY CONFIGS
-  getMessageListQueryConfig(userID: string): QueryConfig<S, Message> {
+  getMessageListQueryConfig(userID: string): QueryConfig<S, Message, 'message'> {
     return {
       queryParams: { senderID: userID },
       relations: [

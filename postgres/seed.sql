@@ -1,35 +1,37 @@
 CREATE TABLE "user" (
-  "id" VARCHAR PRIMARY KEY,
-  "name" VARCHAR NOT NULL,
-  "partner" BOOLEAN NOT NULL
+  "id" VARCHAR PRIMARY KEY,                     -- Unique identifier for the user     
+  "name" VARCHAR NOT NULL,                      -- User's name
+  "partner" BOOLEAN NOT NULL DEFAULT false      -- Indicates if the user is a partner
 );
 
 CREATE TABLE "medium" (
-  "id" VARCHAR PRIMARY KEY,
-  "name" VARCHAR NOT NULL
+  "id" VARCHAR PRIMARY KEY,                     -- Unique identifier for the medium
+  "name" VARCHAR NOT NULL                       -- Name of the medium (e.g., Discord, Twitter DM)
 );
 
 CREATE TABLE "message" (
-  "id" VARCHAR PRIMARY KEY,
-  "sender_id" VARCHAR REFERENCES "user"(id),
-  "medium_id" VARCHAR REFERENCES "medium"(id),
-  "body" VARCHAR NOT NULL,
-  "timestamp" TIMESTAMP not null
+  "id" VARCHAR PRIMARY KEY,                     -- Unique identifier for the message
+  "sender_id" VARCHAR REFERENCES "user"(id),    -- ID of the user who sent the message
+  "medium_id" VARCHAR REFERENCES "medium"(id),  -- ID of the medium through which the message was sent
+  "body" VARCHAR NOT NULL,                      -- Content of the message
+  "timestamp" TIMESTAMP not null                -- Timestamp of when the message was sent
 );
 
 CREATE TABLE "topic" (
-  "id" VARCHAR PRIMARY KEY,
-  "name" VARCHAR NOT NULL
+  "id" VARCHAR PRIMARY KEY,                    -- Unique identifier for the topic
+  "name" VARCHAR NOT NULL 
 );
+
 CREATE TABLE "topic_message" (
-  "topic_id" VARCHAR REFERENCES "topic"(id),
-  "message_id" VARCHAR REFERENCES "message"(id),
-  PRIMARY KEY ("topic_id", "message_id")
+  "topic_id" VARCHAR REFERENCES "topic"(id),    -- ID of the topic
+  "message_id" VARCHAR REFERENCES "message"(id),  -- ID of the message
+  PRIMARY KEY ("topic_id", "message_id")        -- Composite primary key to ensure uniqueness of topic-message pairs
 );
+
 CREATE TABLE "follower" (
-  "user_id" VARCHAR REFERENCES "user"(id),
-  "follower_id" VARCHAR REFERENCES "user"(id),
-  PRIMARY KEY ("user_id", "follower_id")
+  "user_id" VARCHAR REFERENCES "user"(id),      -- ID of the user who is following
+  "follower_id" VARCHAR REFERENCES "user"(id),  -- ID of the user being followed
+  PRIMARY KEY ("user_id", "follower_id")        -- Composite primary key to ensure uniqueness of user-follower pairs
 );
 
 INSERT INTO "user" (id, name, partner) VALUES ('ycD76wW4R2', 'Aaron', true);

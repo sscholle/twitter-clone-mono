@@ -7,23 +7,23 @@ import { Follower, Medium, Message, MessageView, Schema, Topic, User } from "../
   providedIn: 'root'
 })
 export class RepoService<S extends RSchema = Schema> {
-  mediumRepo = new ZeroRepository<S, Medium>(
+  mediumRepo = new ZeroRepository<S, 'medium', Medium>(
     'medium',
   );
-  messageRepo = new ZeroRepository<S, Message>(
+  messageRepo = new ZeroRepository<S, 'message', Message>(
     'message',
   );
-  messageViewsRepo = new ZeroRepository<S, MessageView>(
+  messageViewsRepo = new ZeroRepository<S, 'message_view', MessageView>(
     'message_view',
     ['userID', 'messageID'],
   );
-  userRepo = new ZeroRepository<S, User>(
+  userRepo = new ZeroRepository<S, 'user', User>(
     'user',
   );
-  topicRepo = new ZeroRepository<S, Topic>(
+  topicRepo = new ZeroRepository<S, 'topic', Topic>(
     'topic',
   );
-  followerRepo = new ZeroRepository<S, Follower>(
+  followerRepo = new ZeroRepository<S, 'follower', Follower>(
     'follower',
     ['userID', 'followerID'],
   );
@@ -37,5 +37,14 @@ export class RepoService<S extends RSchema = Schema> {
   fetchRepositories(): Promise<any[]> {
     // Placeholder for fetching repositories logic
     return Promise.resolve([]);
+  }
+
+  destroyRepositories(): void {
+    this.mediumRepo.destroyZero();
+    this.messageRepo.destroyZero();
+    this.messageViewsRepo.destroyZero();
+    this.userRepo.destroyZero();
+    this.topicRepo.destroyZero();
+    this.followerRepo.destroyZero();
   }
 }

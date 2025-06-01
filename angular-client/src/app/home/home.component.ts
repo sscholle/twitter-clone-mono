@@ -2,9 +2,7 @@ import { ChangeDetectorRef, Component, inject } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { CardComponent } from '../components/card.component';
 import { Follower, Medium, Message, MessageView, Schema, Topic, TopicMessage, User } from '../util/schema';
-import { allRepositories as repo } from '../shared/allRepos';
 import { CommonModule } from '@angular/common';
-import { ZeroService } from 'zero-angular';
 import { MessageItemDirective, MessageList } from '../components/message-list/message-list.component';
 import { NgbModal, NgbPaginationModule, NgbTooltipModule } from '@ng-bootstrap/ng-bootstrap';
 import { DisplayMessage, messageShape } from '../shared/DisplayMessage';
@@ -14,6 +12,7 @@ import { NewMessageComponent } from "../components/new-message/new-message.compo
 import { MessageService } from '../services/message.service';
 import { AuthService } from '../services/auth.service';
 import { audit, debounceTime, interval, Subject } from 'rxjs';
+import { ThemeService } from '../services/theme.service';
 
 interface FollowerUser extends Follower {
   user: User
@@ -25,7 +24,7 @@ interface FollowerUser extends Follower {
   styleUrl: './home.component.scss'
 })
 export class HomeComponent {
-  authService = inject(AuthService<Schema>);
+  authService = inject(AuthService);
   modalService = inject(NgbModal);
   changeDetectorRef = inject(ChangeDetectorRef);
   messageService = inject(MessageService);
@@ -51,14 +50,21 @@ export class HomeComponent {
     if(this.authService.isLoggedIn() && this.authService.userID) {
       this.messageService.observeFollowers(this.authService.userID)
       .subscribe((followers) => {
-        console.log('Followers:', followers);
         this.followingUsers = followers as FollowerUser[];
         console.log('Following Users:', this.followingUsers);
-        // Regenerate the Messages query Config
         this.triggerFetch();
       });
     }
 
+    // this.authService.getUser(this.authService.userID)
+    // .then((user) => {
+    //   console.log('User:', user);
+    //   this.user = user as User;
+    //   // this.changeDetectorRef.detectChanges();
+    // })
+    // .catch((error) => {
+    //   console.error('Error fetching user:', error);
+    // });
     // THEME CHANGE HANDLER
     // this.themeService.themeChanges().subscribe(theme => {
     //   if (theme.oldValue) {
@@ -113,7 +119,7 @@ export class HomeComponent {
     console.log('Unfollowing user:', userId);
   }
 
-  queryConfig: QueryConfig<Schema, Message> | undefined = undefined;
+  queryConfig: QueryConfig<Schema, Message, 'message'> | undefined = undefined;
   queryConfig$ = new Subject<any>();
   triggerFetch(){
     if(this.followingUsers.length === 0) {
@@ -173,7 +179,8 @@ export class HomeComponent {
   }
 
   createMessage(messageBody: string) {
-    repo.message?.create(messageShape(this.mediums![0].id, this.authService.userID || "", messageBody))
+    this.messageService.postMessage(messageBody, this.authService.userID || "", this.mediums![0].id)
+    // repo.message?.create(messageShape(this.mediums![0].id, this.authService.userID || "", messageBody))
     .then(() => {
       console.log('Message created');
     })

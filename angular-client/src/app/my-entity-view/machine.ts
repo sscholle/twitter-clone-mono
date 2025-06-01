@@ -36,32 +36,36 @@ export const EntityViewMachine = setup({
     input: {} as EntityViewContext,
   },
   actors: {
-    // all of these are placeholders for the actual service calls
-    loadEntity: fromPromise(({ input }: { input: EntityViewContext }) => {
+    // PLACEHOLDERS: override these when passing actor config to the machine
+    // These actors are used to load, create, update, and delete the entity
+    // They are expected to return a Promise that resolves with the entity data
+    // or rejects with an error
+    // NOTE: these actors are expected to be overridden when creating the machine
+    loadEntity: fromPromise<unknown, EntityViewContext>(({ input }) => {
       return new Promise((resolve) => {
         setTimeout(() => {
           resolve({ ...input.data });
         }, 2000);
       })
     }),
-    tryCreateEntity: fromPromise(({ input }: { input: EntityViewContext }) => {
+    tryCreateEntity: fromPromise<unknown, EntityViewContext>(({ input }) => {
       return new Promise((resolve) => {
         setTimeout(() => {
           resolve({ ...input.data});
         }, 2000);
       })
     }),
-    tryUpdateEntity: fromPromise(({ input }: { input: EntityViewContext }) =>
+    tryUpdateEntity: fromPromise<boolean, EntityViewContext>(({ input }) =>
       new Promise((resolve) => {
         setTimeout(() => {
-          resolve({ ...input.data });
+          resolve(true);
         }, 2000);
       })
     ),
-    tryDeleteEntity: fromPromise(({ input }: { input: EntityViewContext }) =>
-      new Promise((resolve) => {
+    tryDeleteEntity: fromPromise<boolean, EntityViewContext>(({ input }) =>
+      new Promise<boolean>((resolve) => {
         setTimeout(() => {
-          resolve({ ...input.data });
+          resolve(true);
         }, 2000);
       })
     ),

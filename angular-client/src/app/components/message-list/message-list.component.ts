@@ -30,7 +30,7 @@ export class MessageItemDirective {
   styleUrl: './message-list.component.scss'
 })
 export class MessageList implements OnInit, OnChanges {
-  @Input() queryConfig: QueryConfig<Schema, Message> | undefined = undefined;
+  @Input() queryConfig: QueryConfig<Schema, Message, 'message'> | undefined = undefined;
   @Input() dataMap: ((res: any[]) => DisplayMessage[]) | undefined = undefined;// = (res: any[]) => res as DisplayMessage[];
   @Input() messages: DisplayMessage[] = [];
 
@@ -45,7 +45,7 @@ export class MessageList implements OnInit, OnChanges {
   allMessages: Message[] | null = null;
   ngOnInit(): void {
     this.messageService.getMediums()
-      .then((mediums) => {
+      .subscribe((mediums) => {
         console.log('Mediums:', mediums);
         this.mediums = mediums as Medium[];
       });
@@ -55,8 +55,9 @@ export class MessageList implements OnInit, OnChanges {
       if (!this.messages) {
         console.warn('No messageQuery provided, using default query');
       }
-      console.log('Messages:', this.messages);
+      console.log('MessageList: Messages:', this.messages);
     } else {
+      console.log('MessageList: Query Config:', this.queryConfig);
       this.triggerFetch();
     }
 

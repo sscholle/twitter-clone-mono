@@ -2,45 +2,46 @@
 // import all interfaces
 import { IWrite } from './interfaces/IWrite';
 import { IRead, RelationParam } from './interfaces/IRead';
-import { Schema } from '@rocicorp/zero';
+import { ResultType, Schema } from '@rocicorp/zero';
+import { Observable } from 'rxjs';
 
 /**
  * BaseRepository class that implements IWrite and IRead interfaces.
  * This class provides a skeleton for repository operations such as create, update, delete, and find.
  * It is designed to be extended by specific repositories for different data types.
  */
-export abstract class BaseRepository<T, S extends Schema> implements IWrite<T>, IRead<T> {
-    create(item: T): Promise<boolean> {
+export abstract class BaseRepository<TReturn, TSchema extends Schema, TTable extends keyof TSchema['tables'] & string> implements IWrite<TReturn>, IRead<TReturn, TSchema, TTable> {
+    create(item: TReturn): Promise<boolean> {
         throw new Error("Method not implemented.");
     }
-    update(item: T): Promise<boolean> {
+    update(item: TReturn): Promise<boolean> {
         throw new Error("Method not implemented.");
     }
-    upsert(item: T): Promise<boolean> {
+    upsert(item: TReturn): Promise<boolean> {
         throw new Error("Method not implemented.");
     }
-    batchCreate(items: T[]): Promise<boolean> {
+    batchCreate(items: TReturn[]): Promise<boolean> {
         throw new Error("Method not implemented.");
     }
-    batchUpdate(items: T[]): Promise<boolean> {
+    batchUpdate(items: TReturn[]): Promise<boolean> {
         throw new Error("Method not implemented.");
     }
-    batchDelete(items: T[]): Promise<boolean> {
+    batchDelete(items: TReturn[]): Promise<boolean> {
         throw new Error("Method not implemented.");
     }
-    batchUpsert(items: T[]): Promise<boolean> {
+    batchUpsert(items: TReturn[]): Promise<boolean> {
         throw new Error("Method not implemented.");
     }
     batchDeleteByID(ids: string[]): Promise<boolean> {
         throw new Error("Method not implemented.");
     }
-    delete(item: T): Promise<boolean> {
+    delete(item: TReturn): Promise<boolean> {
         throw new Error("Method not implemented.");
     }
-    find<E extends Error>(queryParams: Record<string, string>, relations?: RelationParam<S>[], orderBy?: Record<string, string>, limit?: 0 ): Promise<T[] | E> {
+    find<E extends Error>(queryParams: Record<string, string>, relations?: RelationParam<TSchema, TTable>[], orderBy?: Record<string, string>, limit?: 0 ): Observable<TReturn[] | E> {
         throw new Error("Method not implemented.");
     }
-    findOne<E>(id: string): Promise<T | E> {
+    findOne<E>(id: string, resultTypes: ResultType[]): Observable<TReturn | E> {
         throw new Error("Method not implemented.");
     }
 }

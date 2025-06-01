@@ -4,10 +4,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NgbDropdownModule, NgbPaginationModule, NgbTooltipModule } from '@ng-bootstrap/ng-bootstrap';
 import { ZeroService } from 'zero-angular';
-import { allRepositories as repo } from '../shared/allRepos';
-import { auditTime, throttleTime } from 'rxjs';
+import { throttleTime } from 'rxjs';
 import { MessageList } from '../components/message-list/message-list.component';
-import { query } from '@angular/animations';
 import { QueryConfig } from '../util/ZeroRepository';
 import { MessageService } from '../services/message.service';
 
@@ -70,7 +68,7 @@ export class BookmarksComponent implements OnInit {
   filterText: string = "";
   hasFilters: boolean = false;
   allMessages: MessageViewWithUser[] = [];
-  queryConfig: QueryConfig<Schema, Message> | undefined = undefined;
+  queryConfig: QueryConfig<Schema, Message, 'message'> | undefined = undefined;
   displayMessages: DisplayMessage[] = [];
   triggerFetch(){
     this.messageService.observeMessageViews({

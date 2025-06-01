@@ -2,7 +2,6 @@ import { ChangeDetectorRef, Component, inject } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { CardComponent } from '../components/card.component';
 import { Follower, Medium, Message, Schema, Topic, User } from '../util/schema';
-import { allRepositories as repo } from '../shared/allRepos';
 import { CommonModule } from '@angular/common';
 import { ZeroService } from 'zero-angular';
 import { MessageItemDirective, MessageList } from '../components/message-list/message-list.component';
@@ -56,7 +55,7 @@ export class MessagesComponent {
     // });
   }
 
-  queryConfig: QueryConfig<Schema, Message> | undefined = undefined;
+  queryConfig: QueryConfig<Schema, Message, 'message'> | undefined = undefined;
   triggerFetch(){
     // this.hasFilters = !!(this.filterUser || this.filterText);
     this.queryConfig = {

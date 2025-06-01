@@ -3,7 +3,6 @@ import { Component, inject, OnInit } from "@angular/core";
 import { Schema } from "@rocicorp/zero";
 import { ZeroService } from "zero-angular";
 import { Follower, User } from "../../util/schema";
-import { allRepositories as repo } from '../../shared/allRepos';
 import { NgbTooltipModule } from "@ng-bootstrap/ng-bootstrap";
 import { MessageService } from "../../services/message.service";
 import { AuthService } from "../../services/auth.service";
@@ -21,7 +20,7 @@ interface FollowerUser extends Follower {
 export class WhoToFollowComponent implements OnInit {
   // This component is used to display a list of users to follow
   // It can be used in the home component or anywhere else
-  authService = inject(AuthService<Schema>);
+  authService = inject(AuthService);
   messageService = inject(MessageService);
   users: User[] = [];
   // user: User | null = null;
@@ -32,7 +31,7 @@ export class WhoToFollowComponent implements OnInit {
   }
   ngOnInit(): void {
     this.messageService.getUsers()
-    .then((users) => {
+    .subscribe((users) => {
       console.log('Users:', users);
       this.users = users as User[];
     })

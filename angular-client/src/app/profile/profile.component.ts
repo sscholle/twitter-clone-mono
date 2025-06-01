@@ -16,7 +16,7 @@ import { MessageService } from '../services/message.service';
   styleUrl: './profile.component.scss'
 })
 export class ProfileComponent implements OnInit {
-  queryConfig: QueryConfig<Schema, Message> | undefined = undefined;
+  queryConfig: QueryConfig<Schema, Message, 'message'> | undefined = undefined;
   zeroService = inject(ZeroService<Schema>);
   userID: string = this.zeroService.getZero().userID;// TODO: store this in a service
   modalService = inject(NgbModal);
@@ -29,6 +29,12 @@ export class ProfileComponent implements OnInit {
   myMessges: Message[] | null = null;
 
   ngOnInit(): void {
+    this.messageService.observeTopics()
+    .subscribe((topics) => {
+      console.log('Topics:', topics);
+      this.topics = topics as Topic[];
+    });
+
     this.messageService.observeTopics()
       .subscribe((topics) => {
         console.log('Topics:', topics);
@@ -58,4 +64,14 @@ export class ProfileComponent implements OnInit {
       orderBy: { "timestamp": "desc" },
     };
   }
+
+  filterByTopic(topicId: string) {
+    console.log('Filtering by topic:', topicId);
+    // repo.message?.find({ topicID: topicId })
+    // .then((messages) => {
+    //   console.log('Filtered Messages:', messages);
+    //   this.tweets = messages as Message[];
+    // });
+  }
+
 }
