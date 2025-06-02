@@ -61,7 +61,7 @@ export class MessageService<S extends RSchema = Schema> {
 
   observeMessages(queryConfig: QueryConfig<S, Message, 'message'>) {
     if (this.messageRepo) {
-      return this.messageRepo.findSubscribe(
+      return this.messageRepo.find(
         queryConfig.queryParams || {},
         queryConfig.relations || [],
         queryConfig.orderBy || {},
@@ -77,7 +77,7 @@ export class MessageService<S extends RSchema = Schema> {
   }
   observeAllMessages() {
     if (this.messageRepo) {
-      return this.messageRepo.findSubscribe();
+      return this.messageRepo.find();
     } else {
       console.warn("Message repository is not available.");
       return new Observable<Message[]>(observer => {
@@ -89,7 +89,7 @@ export class MessageService<S extends RSchema = Schema> {
 
   observeTopics() {
     if (this.topicRepo) {
-      return this.topicRepo.findSubscribe();
+      return this.topicRepo.find();
     } else {
       console.warn("Topic repository is not available.");
       return new Observable<Topic[]>(observer => {
@@ -101,7 +101,7 @@ export class MessageService<S extends RSchema = Schema> {
   observeFollowers(userID: string) {
     if (this.followerRepo) {
       console.log("Observing followers for userID:", userID);
-      return this.followerRepo.findSubscribe(
+      return this.followerRepo.find(
         {
           "followerID": userID || '',
         },
@@ -129,7 +129,7 @@ export class MessageService<S extends RSchema = Schema> {
    */
   observeMessageViews(queryConfig: QueryConfig<S, MessageView, 'message_view'>): Observable<MessageView[]> {
     if (this.messageViewsRepo) {
-      return this.messageViewsRepo.findSubscribe(
+      return this.messageViewsRepo.find(
         queryConfig.queryParams || {},
         queryConfig.relations || [],
         queryConfig.orderBy || {},
@@ -182,7 +182,7 @@ export class MessageService<S extends RSchema = Schema> {
       console.warn("Message must have a body.");
       return Promise.reject("Message must have a body.");
     }
-    return this.messageRepo.create(messageShape(mediumID, body, senderID));
+    return this.messageRepo.create(messageShape(mediumID,senderID, body));
   }
 
   bookmarkMessage(messageID: string, userID: string, flag: boolean): Promise<boolean> {

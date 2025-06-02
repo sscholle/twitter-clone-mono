@@ -26,11 +26,16 @@ export class AppComponent implements OnInit, OnDestroy {
   themeService = inject(ThemeService);
 
   ngOnInit(): void {
-    this.authService.runAuth().then(() => {
-      console.log('Auth Service initialized');
-      // this.initApp();
-    }).catch((err) => {
-      console.error('Error initializing Auth Service:', err);
+    this.authService.runAuth()
+    .subscribe({
+      next: (user) => {
+        console.log('User logged in:', user);
+        // this.messageService.initMessageService(user);
+        // this.repoService.initRepositories(user);
+      },
+      error: (err) => {
+        console.error('Error during authentication:', err);
+      }
     });
     // this.themeService.themeChanges().subscribe(theme => {
     //   if (theme.oldValue) {

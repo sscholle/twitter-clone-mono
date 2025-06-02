@@ -211,7 +211,7 @@ export class ZeroRepository<TSchema extends Schema, TTable extends keyof TSchema
     limit?: number,
     start?: Partial<TReturn>,
     resultTypes: string[] = ["unknown", "complete"],
-    ttl: TTL = '10s'
+    ttl?: TTL
   ): Observable<TReturn[]> {
     try {
       const find = this.generateQueryObject(queryParams, relations, orderBy, limit, start);
@@ -274,36 +274,36 @@ export class ZeroRepository<TSchema extends Schema, TTable extends keyof TSchema
   }
 
   // #region CUSTOM QUERIES
-  findSubscribe(
-    queryParams: Record<string, ParamValue> = {},
-    relations?: RelationParam<TSchema, TTable>[],
-    orderBy?: Record<string, string>,
-    limit?: number,
-    start?: Partial<TReturn>,
-    resultTypes: ResultType[] = ["unknown", "complete"],
-    ttl: TTL = '1m'
-  ): Observable<TReturn[]> {
-    console.log("findSubscribe", this.collectionName, queryParams, relations, orderBy, limit, start);
-    try {
-      const find = this.generateQueryObject(queryParams, relations, orderBy, limit, start);
-      return this.query.useQuery(find, { ttl })
-        .pipe(
-          filter(([result, resultType]) => {
-            // console.log("resultType", resultType);
-            // return resultType.type === "complete";
-            return resultTypes.includes(resultType.type);// resultType.type === "complete";
-          }),
-          map(([result, type]) => {
-            return result as TReturn[];
-          })
-        );
-    } catch (error) {
-      console.error("Error finding item:", error);
-      return new Observable<TReturn[]>((subscriber) => {
-        subscriber.error(new ItemNotFoundError("Item not found or query failed"));
-      });
-    }
-  }
+  // findSubscribe(
+  //   queryParams: Record<string, ParamValue> = {},
+  //   relations?: RelationParam<TSchema, TTable>[],
+  //   orderBy?: Record<string, string>,
+  //   limit?: number,
+  //   start?: Partial<TReturn>,
+  //   resultTypes: ResultType[] = ["unknown", "complete"],
+  //   ttl?: TTL
+  // ): Observable<TReturn[]> {
+  //   console.log("findSubscribe", this.collectionName, queryParams, relations, orderBy, limit, start);
+  //   try {
+  //     const find = this.generateQueryObject(queryParams, relations, orderBy, limit, start);
+  //     return this.query.useQuery(find, { ttl })
+  //       .pipe(
+  //         filter(([result, resultType]) => {
+  //           // console.log("resultType", resultType);
+  //           // return resultType.type === "complete";
+  //           return resultTypes.includes(resultType.type);// resultType.type === "complete";
+  //         }),
+  //         map(([result, type]) => {
+  //           return result as TReturn[];
+  //         })
+  //       );
+  //   } catch (error) {
+  //     console.error("Error finding item:", error);
+  //     return new Observable<TReturn[]>((subscriber) => {
+  //       subscriber.error(new ItemNotFoundError("Item not found or query failed"));
+  //     });
+  //   }
+  // }
   // #endregion CUSTOM QUERIES
 
   // #region UTILITY METHODS

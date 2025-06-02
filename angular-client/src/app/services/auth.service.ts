@@ -4,7 +4,7 @@ import { Schema, User } from "../util/schema";
 import Cookies from "js-cookie";
 import { RepoService } from "./repo.service";
 import { ZeroService } from "zero-angular";
-import { filter, interval, Subject, switchMap, take, tap } from "rxjs";
+import { filter, interval, Observable, Subject, switchMap, take, tap } from "rxjs";
 
 @Injectable({
   providedIn: 'root'
@@ -31,30 +31,27 @@ export class AuthService<TSchema extends RSchema = Schema> {
     console.log("AuthService initialized");
   }
 
-  async runAuth(): Promise<User | null> {
+  runAuth(): Observable<User | undefined>{
     console.log("Running AuthService", this.userID);
     if(this.isLoggedIn()) {
-      try {
-        const user = await this.getUser(this.userID);
-        if (user) {
-          this.user = user;
-          this.user$.next(this.user); // Emit user data
-
-          // this.userID = user.id; // Assuming User has an 'id' property
-          console.log("User Detail fetched:", this.user);
-        } else {
-          console.warn("User not found.");
-        }
-        return user || null;
-      } catch (error) {
-        console.error("Error fetching user:", error);
-        return null;
-      }
-    } else {
-      console.log("User is not logged in.");
-      this.user$.next(null); // Emit null if not logged in
+      return this.getUser(this.userID)
+        .pipe(
+          tap(user => {
+            console.log("User fetched:", user);
+            this.user = user || null; // Set user data
+            this.user$.next(this.user); // Emit user data to subscribers
+          }),
+          filter(user => !!user), // Filter out null users
+        );
+    }
+    else {
+      console.log("User is not logged in, returning null");
       this.user = null; // Reset user data
-      return Promise.resolve(null); // Return a resolved promise with null
+      this.user$.next(null); // Emit null to notify subscribers
+      return new Observable<User | undefined>(observer => {
+        observer.next(undefined); // Emit undefined for not logged in
+        observer.complete(); // Complete the observable
+      });
     }
   }
 
@@ -77,7 +74,7 @@ export class AuthService<TSchema extends RSchema = Schema> {
     return res
   }
 
-  getUser(userID: string): Promise<User | undefined> {
+  getUser(userID: string): Observable<User | undefined> {
     // return repo.user?.findOne(userID) || Promise.resolve(null);
     if (this.userRepo) {
       console.log("Fetching user data for userID:", userID);
@@ -91,11 +88,13 @@ export class AuthService<TSchema extends RSchema = Schema> {
         switchMap(() => {
           console.log("Zero is online, fetching user data...");
           return this.userRepo.findOne(userID);
-      })).toPromise()
+      }))
 
     } else {
       console.warn("User repository is not available.");
-      return Promise.resolve(undefined);
+      return new Observable<User | undefined>(observer => {
+        observer.error("User repository is not available.");
+      });
     }
   }
 }

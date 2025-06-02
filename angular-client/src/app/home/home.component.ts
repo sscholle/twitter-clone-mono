@@ -42,11 +42,11 @@ export class HomeComponent {
       console.log('Topics:', topics);
       this.topics = topics as Topic[];
     });
-    // this.messageService.getMediums()
-    // .then((mediums) => {
-    //   console.log('Mediums:', mediums);
-    //   this.mediums = mediums as Medium[];
-    // });
+    this.messageService.getMediums()
+    .subscribe((mediums) => {
+      console.log('Mediums:', mediums);
+      this.mediums = mediums as Medium[];
+    });
     if(this.authService.isLoggedIn() && this.authService.userID) {
       this.messageService.observeFollowers(this.authService.userID)
       .subscribe((followers) => {
@@ -157,25 +157,6 @@ export class HomeComponent {
       orderBy: { "timestamp": "desc" },
     }
     // this.queryConfig$.next(this.queryConfig);
-  }
-
-  trackByFn(index: number, item: DisplayMessage) {
-    return item.id;
-  }
-  trackByFnMedium(index: number, item: Medium) {
-    return item.id;
-  }
-  trackByFnUser(index: number, item: User) {
-    return item.id;
-  }
-  trackByFnTopic(index: number, item: Topic) {
-    return item.id;
-  }
-  trackByFnTopicMessage(index: number, item: TopicMessage) {
-    return item.topicID + item.messageID;
-  }
-  trackByFnMessageView(index: number, item: MessageView) {
-    return item.userID + item.messageID;
   }
 
   createMessage(messageBody: string) {

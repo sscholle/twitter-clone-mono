@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 import { NgbDropdownModule, NgbModal, NgbPaginationModule, NgbTooltipModule } from '@ng-bootstrap/ng-bootstrap';
 import { ZeroService } from 'zero-angular';
 import { DisplayMessage } from '../../shared/DisplayMessage';
-import { auditTime, BehaviorSubject, filter, take } from 'rxjs';
+import { auditTime, BehaviorSubject, filter, Subject, take } from 'rxjs';
 import { QueryConfig } from '../../util/ZeroRepository';
 import { MyEntityViewComponent } from '../../my-entity-view/my-entity-view.component';
 import { EntityViewPermission } from '../../my-entity-view/machine';
@@ -41,14 +41,26 @@ export class MessageList implements OnInit, OnChanges {
   changeDetectorRef = inject(ChangeDetectorRef);
   messageService = inject(MessageService);
   userID: string = this.zeroService.getZero().userID;
-  mediums: Medium[] | null = null;
+  // mediums: Medium[] | null = null;
   allMessages: Message[] | null = null;
   ngOnInit(): void {
-    this.messageService.getMediums()
-      .subscribe((mediums) => {
-        console.log('Mediums:', mediums);
-        this.mediums = mediums as Medium[];
-      });
+
+    this.queryChanged.pipe(
+      // filter((queryConfig) => !!queryConfig),
+      // auditTime(1000), // Debounce the query changes
+      // take(1), // Take only the first query change
+    ).subscribe((queryConfig) => {
+      console.log('Query Changed:', queryConfig);
+      this.queryConfig = queryConfig;
+      this.triggerFetch();
+    });
+
+
+    // this.messageService.getMediums()
+    //   .subscribe((mediums) => {
+    //     console.log('Mediums:', mediums);
+    //     this.mediums = mediums as Medium[];
+    //   });
 
     if (!this.queryConfig) {
       console.warn('No messageQuery provided, using default query');
@@ -58,7 +70,8 @@ export class MessageList implements OnInit, OnChanges {
       console.log('MessageList: Messages:', this.messages);
     } else {
       console.log('MessageList: Query Config:', this.queryConfig);
-      this.triggerFetch();
+      // this.triggerFetch();
+      this.queryChanged.next(this.queryConfig);
     }
 
     this.messageService.observeMessages(
@@ -68,20 +81,24 @@ export class MessageList implements OnInit, OnChanges {
         orderBy: this.queryConfig?.orderBy || { timestamp: 'desc' },
       }
     ).subscribe((messages) => {
-      console.log('Messages:', messages);
+      console.log('ALL Messages:', messages);
       this.allMessages = messages as Message[];
     });
+
   }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['queryConfig']) {
       console.log('Query Config Changed:', changes['queryConfig'].currentValue);
       // If queryConfig has changed, we need to re-fetch the messages
-      this.triggerFetch();
+      // this.triggerFetch();
+      this.queryChanged.next(changes['queryConfig'].currentValue);
     }
     // console.log('Query Config Changed:', changes['queryConfig']);
     // changes.queryConfig && this.triggerFetch();
   }
+
+  queryChanged: Subject<QueryConfig<Schema, Message, 'message'>> = new Subject();
 
   triggerFetch() {
     if(!this.queryConfig) {
@@ -92,7 +109,7 @@ export class MessageList implements OnInit, OnChanges {
     this.messageService.observeMessages(
       this.queryConfig
     ).subscribe((messages) => {
-      console.log('Messages:', messages);
+      console.log('MessageList: ', messages);
       // this.displaymessages = messages as DisplayMessage[];
       if (this.dataMap) {
         this.messages = this.dataMap(messages);
