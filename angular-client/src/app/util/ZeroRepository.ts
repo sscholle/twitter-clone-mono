@@ -210,7 +210,7 @@ export class ZeroRepository<TSchema extends Schema, TTable extends keyof TSchema
     orderBy?: Record<string, string>,
     limit?: number,
     start?: Partial<TReturn>,
-    resultTypes: string[] = ["unknown", "complete"],
+    resultTypes: ResultType[] = ["unknown", "complete"],
     ttl?: TTL
   ): Observable<TReturn[]> {
     try {
@@ -222,7 +222,7 @@ export class ZeroRepository<TSchema extends Schema, TTable extends keyof TSchema
             return resultTypes.includes(resultType.type);// resultType.type === "complete";
           }),
           map(([result, resultType]) => {
-            console.log("find result", result, "resultType", resultType);
+            console.debug("ZeroRepository: ", this.collectionName, "find result", result, "resultType", resultType);
             return result as TReturn[];
           })
         )
@@ -246,8 +246,8 @@ export class ZeroRepository<TSchema extends Schema, TTable extends keyof TSchema
    */
   override findOne(
     id: string,
-    resultTypes: string[] = ["unknown", "complete"],
-    ttl: TTL = '1m'
+    resultTypes: ResultType[] = ["unknown", "complete"],
+    ttl?: TTL
   ): Observable<TReturn> {
     return this.query.useQuery(
       this.baseQuery
@@ -261,7 +261,7 @@ export class ZeroRepository<TSchema extends Schema, TTable extends keyof TSchema
         return resultTypes.includes(resultType.type);// resultType.type === "complete";
       }),
       map(([result, resultType]) => {
-        console.log("findOne result", result, "resultType", resultType);
+        console.debug("ZeroRepository: ", this.collectionName, "findOne result", result, "resultType", resultType);
         if (result) {
           return result as unknown as TReturn;
         } else {
@@ -350,6 +350,12 @@ export class ZeroRepository<TSchema extends Schema, TTable extends keyof TSchema
   }
   // #endregion UTILITY METHODS
 
+  /**
+   * Destroys the ZeroRepository instance.
+   * This method closes the Zero instance and clears the base query and mutator.
+   * Not sure if we really need this, but might be good if we want to cleanup to create a fresh instance.
+   * @todo - consider if we need to do this, or if we can just let the Zero instance handle cleanup.
+   */
   destroyZero() {
     console.log("Destroying ZeroRepository for collection:", this.collectionName);
     this.z.close(); // Close the Zero instance

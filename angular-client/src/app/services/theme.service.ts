@@ -6,7 +6,13 @@ export interface ThemeObject {
   newValue: string;
 };
 
-
+/**
+ * Theme Service
+ * This service manages the theme selection for the application.
+ * It allows setting and getting the current theme, and provides an observable for theme changes.
+ * It initializes with a default theme based on the user's system preference.
+ * It uses a BehaviorSubject to track the current theme and notify subscribers of changes.
+ */
 @Injectable({
   providedIn: 'root'
 })

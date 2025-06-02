@@ -81,7 +81,6 @@ export class MessageList implements OnInit, OnChanges {
         orderBy: this.queryConfig?.orderBy || { timestamp: 'desc' },
       }
     ).subscribe((messages) => {
-      console.log('ALL Messages:', messages);
       this.allMessages = messages as Message[];
     });
 
@@ -109,8 +108,6 @@ export class MessageList implements OnInit, OnChanges {
     this.messageService.observeMessages(
       this.queryConfig
     ).subscribe((messages) => {
-      console.log('MessageList: ', messages);
-      // this.displaymessages = messages as DisplayMessage[];
       if (this.dataMap) {
         this.messages = this.dataMap(messages);
       } else {

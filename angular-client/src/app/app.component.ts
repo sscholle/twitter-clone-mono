@@ -1,4 +1,4 @@
-import { Component, inject, OnDestroy, OnInit } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit, Renderer2 } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { Schema } from './util/schema';
 import { SidebarComponent } from "./components/sidebar/sidebar.component";
@@ -24,14 +24,13 @@ export class AppComponent implements OnInit, OnDestroy {
   messageService = inject(MessageService);
   zeroService = inject(ZeroService<Schema>);
   themeService = inject(ThemeService);
+  // renderer = inject(Renderer2);
 
   ngOnInit(): void {
     this.authService.runAuth()
     .subscribe({
       next: (user) => {
         console.log('User logged in:', user);
-        // this.messageService.initMessageService(user);
-        // this.repoService.initRepositories(user);
       },
       error: (err) => {
         console.error('Error during authentication:', err);
@@ -42,7 +41,7 @@ export class AppComponent implements OnInit, OnDestroy {
     //     this.renderer.removeClass(document.body, theme.oldValue);
     //   }
     //   this.renderer.addClass(document.body, theme.newValue);
-    // // })
+    // })
   }
 
   // TODO: Provide an Auth Service to handle login/logout
